@@ -17,17 +17,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class OAIP_Integration_WooCommerce {
+class OpenPixel_Integration_WooCommerce {
 
-	const META_PIXEL_FIRED = '_oaip_pixel_fired';
-	const META_CAPI_QUEUED = '_oaip_capi_queued';
-	const META_OPPREF      = '_oaip_oppref';
-	const META_OBREF       = '_oaip_obref';
+	const META_PIXEL_FIRED = '_openpixel_pixel_fired';
+	const META_CAPI_QUEUED = '_openpixel_capi_queued';
+	const META_OPPREF      = '_openpixel_oppref';
+	const META_OBREF       = '_openpixel_obref';
 
-	/** @var OAIP_Core */
+	/** @var OpenPixel_Core */
 	private $core;
 
-	public function __construct( OAIP_Core $core ) {
+	public function __construct( OpenPixel_Core $core ) {
 		$this->core = $core;
 	}
 
@@ -37,7 +37,7 @@ class OAIP_Integration_WooCommerce {
 		}
 
 		// Browser events.
-		add_action( 'oaip_prepare', array( $this, 'prepare_page_events' ), 10, 1 );
+		add_action( 'openpixel_prepare', array( $this, 'prepare_page_events' ), 10, 1 );
 		add_action( 'woocommerce_add_to_cart', array( $this, 'track_add_to_cart' ), 10, 6 );
 		add_filter( 'woocommerce_add_to_cart_fragments', array( $this, 'add_pending_events_fragment' ) );
 
@@ -71,7 +71,7 @@ class OAIP_Integration_WooCommerce {
 	 * Page-level events (run before <head>)
 	 * ------------------------------------------------------------------ */
 
-	public function prepare_page_events( OAIP_Event_Bus $bus ) {
+	public function prepare_page_events( OpenPixel_Event_Bus $bus ) {
 		if ( is_order_received_page() ) {
 			$this->prepare_thank_you( $bus );
 			return;
@@ -87,7 +87,7 @@ class OAIP_Integration_WooCommerce {
 		}
 	}
 
-	private function prepare_product_view( OAIP_Event_Bus $bus ) {
+	private function prepare_product_view( OpenPixel_Event_Bus $bus ) {
 		$product = wc_get_product( get_queried_object_id() );
 		if ( ! $product ) {
 			return;
@@ -104,7 +104,7 @@ class OAIP_Integration_WooCommerce {
 		);
 	}
 
-	private function prepare_checkout( OAIP_Event_Bus $bus ) {
+	private function prepare_checkout( OpenPixel_Event_Bus $bus ) {
 		$cart = WC()->cart;
 		if ( ! $cart || $cart->is_empty() ) {
 			return;
@@ -131,7 +131,7 @@ class OAIP_Integration_WooCommerce {
 		);
 	}
 
-	private function prepare_thank_you( OAIP_Event_Bus $bus ) {
+	private function prepare_thank_you( OpenPixel_Event_Bus $bus ) {
 		$order = $this->get_order_from_received_page();
 		if ( ! $order ) {
 			return;
@@ -170,7 +170,8 @@ class OAIP_Integration_WooCommerce {
 			return null;
 		}
 
-		$key = isset( $_GET['key'] ) ? wc_clean( wp_unslash( $_GET['key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- order key is the credential here, checked with hash_equals below.
+		$key = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : '';
 		if ( ! $key || ! hash_equals( $order->get_order_key(), $key ) ) {
 			return null;
 		}
@@ -209,7 +210,7 @@ class OAIP_Integration_WooCommerce {
 
 	/**
 	 * Classic AJAX add-to-cart: ship pending events back inside the
-	 * fragments response so assets/js/oaip.js can fire them immediately.
+	 * fragments response so assets/js/openpixel.js can fire them immediately.
 	 */
 	public function add_pending_events_fragment( $fragments ) {
 		$events = $this->core->get_bus()->drain_persisted();
@@ -222,7 +223,7 @@ class OAIP_Integration_WooCommerce {
 			return $fragments;
 		}
 
-		$fragments['#oaip-pending'] = '<div id="oaip-pending" hidden data-oaip-events="' . esc_attr( wp_json_encode( $payloads ) ) . '"></div>';
+		$fragments['#openpixel-pending'] = '<div id="openpixel-pending" hidden data-openpixel-events="' . esc_attr( wp_json_encode( $payloads ) ) . '"></div>';
 
 		return $fragments;
 	}
@@ -305,7 +306,7 @@ class OAIP_Integration_WooCommerce {
 			$item['variant'] = $this->variation_attributes( $cart_item['variation'] );
 		}
 
-		return apply_filters( 'oaip_wc_product_item', $item, $product, $quantity );
+		return apply_filters( 'openpixel_wc_product_item', $item, $product, $quantity );
 	}
 
 	private function order_items( WC_Order $order, $with_variants = false ) {
@@ -331,7 +332,7 @@ class OAIP_Integration_WooCommerce {
 				$item['variant'] = $this->variation_attributes( $product->get_variation_attributes() );
 			}
 
-			$items[] = apply_filters( 'oaip_wc_product_item', $item, $product, $quantity );
+			$items[] = apply_filters( 'openpixel_wc_product_item', $item, $product, $quantity );
 		}
 
 		return $items;

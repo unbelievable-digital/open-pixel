@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class OAIP_Hash {
+class OpenPixel_Hash {
 
 	/**
 	 * Lowercase 64-char hex SHA-256 of a UTF-8 string.

@@ -1,4 +1,4 @@
-# OpenAI Pixel for WordPress — Implementation Plan
+# Open Pixel — Implementation Plan
 
 Source of truth: https://developers.openai.com/ads/measurement-pixel (+ `supported-events`, `conversions-api`, `image-tag`, `multiple-pixels`). Everything below maps directly to those docs.
 
@@ -12,7 +12,7 @@ Source of truth: https://developers.openai.com/ads/measurement-pixel (+ `support
 | `oaiq("measure", eventName, data, options)`; `data.type` must match the event's shape (`contents`, `customer_action`, `plan_enrollment`, `custom`). | A small PHP event model validates shape before it ever reaches JS. |
 | `amount` is an **integer in ISO 4217 minor units** and requires `currency`. | Money helper converts WooCommerce decimal prices using the currency's real exponent (JPY=0, KWD=3, most=2), not the store's display decimals. |
 | `contents[]` items only allow `id, name, content_type, quantity, amount, currency` on the Pixel (`group_id`, `variant_dict` are Conversions API only). | Content builder strips anything else; CAPI builder may add `group_id` (parent product) and `variant_dict` (attributes). |
-| Consent defaults to `true`; `oaiq("consent", false)` before `init` blocks pings; blocked events are not replayed. | Optional "require consent" mode that emits `consent(false)` first and exposes `window.oaipGrantConsent()` + WP Consent API integration. |
+| Consent defaults to `true`; `oaiq("consent", false)` before `init` blocks pings; blocked events are not replayed. | Optional "require consent" mode that emits `consent(false)` first and exposes `window.openPixel.grantConsent()` + WP Consent API integration. |
 | `user` object on `init` improves matching: SHA-256 of normalized email/phone/external_id/first/last name + raw country/city/region/postal_code. Strict normalization rules. | PHP hashing helper implements the exact normalization rules from the docs. Populated from the logged-in user / order billing details. |
 | Dedup key = Pixel ID + event name + `event_id`; first event wins. | Deterministic IDs: `order_{id}` for purchases, `checkout_{cart_hash}` for checkout, `reg_{user_id}` for registration. Same ID reused by the server-side event. |
 | Conversions API: `POST https://bzr.openai.com/v1/events?pid=<PIXEL-ID>`, `Authorization: Bearer <KEY>`, ≤1000 events/batch, `timestamp_ms` within 7 days, `source_url` required for web, `oppref` not auto-captured, `obref` from `__obref` cookie goes inside `user`. Docs: "more reliable than the pixel alone, use when possible". | Server-side `order_created` on payment complete with the same `order_{id}`; capture `__oppref`/`__obref` cookies at checkout and persist on the order; ship IP + user agent from the order. `validate_only` used for the admin "test" button. |
@@ -25,10 +25,10 @@ Source of truth: https://developers.openai.com/ads/measurement-pixel (+ `support
 WordPress / WooCommerce hooks
         │
         ▼
-OAIP_Event_Bus  ── normalized events (view_item, add_to_cart, begin_checkout,
+OpenPixel_Event_Bus  ── normalized events (view_item, add_to_cart, begin_checkout,
         │           purchase, registration, page_view) with money in minor units
         │
-        ├──► OAIP_Provider_OpenAI  → oaiq("measure", ...) in the page + Conversions API
+        ├──► OpenPixel_Provider_OpenAI  → oaiq("measure", ...) in the page + Conversions API
         ├──► (later) Meta provider  → fbq("track", ...)  + Meta CAPI
         └──► (later) Google provider→ gtag("event", ...)
 ```
@@ -57,7 +57,7 @@ Events that happen on requests that render no page (AJAX add-to-cart, registrati
 - [x] API key setting (stored via WP options; never printed to the page).
 - [x] Capture `__oppref` / `__obref` cookies during checkout → order meta.
 - [x] `order_created` sent on `woocommerce_payment_complete` / first `processing|completed` status, same `order_{id}` id, `action_source=web`, `source_url` = order-received URL, `user` = hashed billing + IP + UA + `obref`, `contents[]` with `group_id` / `variant_dict`.
-- [x] Async delivery through Action Scheduler (ships with WooCommerce) with retry; WC logger output under source `openai-pixel`.
+- [x] Async delivery through Action Scheduler (ships with WooCommerce) with retry; WC logger output under source `open-pixel`.
 - [x] Admin "Send test event" using `validate_only: true`.
 - [ ] `registration_completed` and `lead_created` server-side where a browser event may be lost.
 - [ ] Verify on a real store with a real Pixel ID + API key (debug mode + WooCommerce logs).

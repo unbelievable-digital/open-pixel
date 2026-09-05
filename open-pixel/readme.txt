@@ -1,18 +1,18 @@
-=== OpenAI Pixel ===
+=== Open Pixel ===
 Contributors: unbelievabledigital
 Tags: openai, chatgpt ads, pixel, conversion tracking, woocommerce
 Requires at least: 5.8
-Tested up to: 6.6
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-ChatGPT Ads Measurement Pixel and Conversions API for WordPress and WooCommerce. Enter your Pixel ID and start measuring conversions.
+Conversion pixel manager for WordPress and WooCommerce. OpenAI (ChatGPT Ads) Measurement Pixel and Conversions API today, more providers on the same event bus.
 
 == Description ==
 
-OpenAI Pixel installs the official ChatGPT Ads Measurement Pixel on every
+Open Pixel installs the official ChatGPT Ads Measurement Pixel on every
 page and sends the standard conversion events for you:
 
 * `page_viewed` on every page.
@@ -30,14 +30,14 @@ the browser, and a `<noscript>` image tag covers visitors without JavaScript.
 = Consent =
 
 Choose "Require consent first" to initialize the pixel with consent set to
-`false`. Grant consent from your cookie banner with `window.oaip.grantConsent()`;
+`false`. Grant consent from your cookie banner with `window.openPixel.grantConsent()`;
 the WP Consent API "marketing" category is detected automatically.
 
 = Conversions API =
 
 Enable it and paste the API key from the Conversions tab of Ads Manager.
 Orders are delivered asynchronously with retries and logged under
-WooCommerce > Status > Logs (source: openai-pixel). A "Send test event"
+WooCommerce > Status > Logs (source: open-pixel). A "Send test event"
 button validates your credentials without recording anything.
 
 = Extensible =
@@ -45,11 +45,11 @@ button validates your credentials without recording anything.
 The plugin is a small pixel manager: integrations emit normalized events on
 a bus and each provider maps them to its own API. Additional providers
 (Meta, Google Ads, TikTok, ...) can be registered with the
-`oaip_pixel_providers` filter.
+`openpixel_pixel_providers` filter.
 
 == Installation ==
 
-1. Upload the `openai-pixel` folder to `/wp-content/plugins/`.
+1. Upload the `open-pixel` folder to `/wp-content/plugins/`.
 2. Activate the plugin through the "Plugins" screen in WordPress.
 3. Go to Settings > Pixel Manager, enter your Pixel ID and enable the pixel.
 
@@ -62,7 +62,7 @@ In ChatGPT Ads Manager, Conversions tab.
 = My site uses a Content Security Policy. =
 
 Allow `script-src https://bzrcdn.openai.com`, `connect-src https://bzr.openai.com https://bzrcdn.openai.com`
-and `img-src https://bzr.openai.com`. Use the `oaip_script_nonce` filter to add your nonce to the inline snippets.
+and `img-src https://bzr.openai.com`. Use the `openpixel_script_nonce` filter to add your nonce to the inline snippets.
 
 = Does it work with WooCommerce HPOS? =
 

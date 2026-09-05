@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class OAIP_Money {
+class OpenPixel_Money {
 
 	/** Currencies with zero minor-unit digits. */
 	const ZERO_DECIMAL = array(
@@ -39,7 +39,7 @@ class OAIP_Money {
 			return 3;
 		}
 
-		return (int) apply_filters( 'oaip_currency_exponent', 2, $currency );
+		return (int) apply_filters( 'openpixel_currency_exponent', 2, $currency );
 	}
 
 	/**

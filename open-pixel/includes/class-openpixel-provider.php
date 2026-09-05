@@ -5,7 +5,7 @@
  * A provider:
  *  - declares its settings fields (the admin screen renders them generically),
  *  - prints its loader in <head> / <body>,
- *  - turns normalized bus events into browser payloads consumed by assets/js/oaip.js,
+ *  - turns normalized bus events into browser payloads consumed by assets/js/openpixel.js,
  *  - optionally handles server-side events (Conversions APIs).
  */
 
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-abstract class OAIP_Provider {
+abstract class OpenPixel_Provider {
 
 	/** @var array Saved settings merged with defaults. Set by core. */
 	protected $settings = array();
@@ -21,7 +21,7 @@ abstract class OAIP_Provider {
 	/** Unique key, e.g. "openai". */
 	abstract public function get_id();
 
-	/** Human readable name, e.g. "OpenAI Pixel". */
+	/** Human readable name, e.g. "OpenAI (ChatGPT Ads Measurement Pixel)". */
 	abstract public function get_label();
 
 	/** Short helper text for the settings section. */
@@ -46,7 +46,7 @@ abstract class OAIP_Provider {
 	public function get_fields() {
 		return array(
 			'enabled' => array(
-				'label'   => __( 'Enabled', 'openai-pixel' ),
+				'label'   => __( 'Enabled', 'open-pixel' ),
 				'type'    => 'checkbox',
 				'default' => false,
 			),
@@ -133,10 +133,10 @@ abstract class OAIP_Provider {
 	}
 
 	/** Print loader / init markup in <head>. */
-	public function render_head( OAIP_Event_Bus $bus ) {}
+	public function render_head( OpenPixel_Event_Bus $bus ) {}
 
 	/** Print markup right before </body> (noscript fallbacks etc.). */
-	public function render_footer( OAIP_Event_Bus $bus ) {}
+	public function render_footer( OpenPixel_Event_Bus $bus ) {}
 
 	/**
 	 * Payloads to run in the browser *before* the event payloads (e.g. a
@@ -145,7 +145,7 @@ abstract class OAIP_Provider {
 	 *
 	 * @return array
 	 */
-	public function get_prelude_payloads( OAIP_Event_Bus $bus ) {
+	public function get_prelude_payloads( OpenPixel_Event_Bus $bus ) {
 		return array();
 	}
 

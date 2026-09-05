@@ -7,22 +7,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class OAIP_Core {
+class OpenPixel_Core {
 
-	/** @var OAIP_Provider[] */
+	/** @var OpenPixel_Provider[] */
 	private $providers = array();
 
-	/** @var OAIP_Event_Bus */
+	/** @var OpenPixel_Event_Bus */
 	private $bus;
 
 	public function __construct() {
-		$this->bus = new OAIP_Event_Bus();
+		$this->bus = new OpenPixel_Event_Bus();
 	}
 
 	public function init() {
 		$this->register_providers();
 
-		add_action( 'oaip_server_event', array( $this, 'dispatch_server_event' ) );
+		add_action( 'openpixel_server_event', array( $this, 'dispatch_server_event' ) );
 
 		// Registrations that happen outside WooCommerce (wp-login.php, membership plugins, ...).
 		add_action( 'user_register', array( $this, 'track_registration' ), 20 );
@@ -35,11 +35,11 @@ class OAIP_Core {
 		}
 
 		if ( class_exists( 'WooCommerce' ) ) {
-			$wc = new OAIP_Integration_WooCommerce( $this );
+			$wc = new OpenPixel_Integration_WooCommerce( $this );
 			$wc->init();
 		}
 
-		do_action( 'oaip_init', $this );
+		do_action( 'openpixel_init', $this );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -47,19 +47,19 @@ class OAIP_Core {
 	 * ------------------------------------------------------------------ */
 
 	private function register_providers() {
-		$providers = array( new OAIP_Provider_OpenAI() );
+		$providers = array( new OpenPixel_Provider_OpenAI() );
 
 		/**
 		 * Register additional pixel providers (Meta, Google, TikTok, ...).
 		 *
-		 * @param OAIP_Provider[] $providers
+		 * @param OpenPixel_Provider[] $providers
 		 */
-		$providers = apply_filters( 'oaip_pixel_providers', $providers );
+		$providers = apply_filters( 'openpixel_pixel_providers', $providers );
 
-		$all_settings = get_option( OAIP_OPTION_KEY, array() );
+		$all_settings = get_option( OPENPIXEL_OPTION_KEY, array() );
 
 		foreach ( $providers as $provider ) {
-			if ( ! $provider instanceof OAIP_Provider ) {
+			if ( ! $provider instanceof OpenPixel_Provider ) {
 				continue;
 			}
 			$id    = $provider->get_id();
@@ -69,12 +69,12 @@ class OAIP_Core {
 		}
 	}
 
-	/** @return OAIP_Provider[] */
+	/** @return OpenPixel_Provider[] */
 	public function get_providers() {
 		return $this->providers;
 	}
 
-	/** @return OAIP_Provider|null */
+	/** @return OpenPixel_Provider|null */
 	public function get_provider( $id ) {
 		return isset( $this->providers[ $id ] ) ? $this->providers[ $id ] : null;
 	}
@@ -147,7 +147,7 @@ class OAIP_Core {
 
 	/**
 	 * Runs once the main query is known: set user data for advanced
-	 * matching and queue page_viewed. Integrations hook `oaip_prepare`.
+	 * matching and queue page_viewed. Integrations hook `openpixel_prepare`.
 	 */
 	public function prepare_frontend() {
 		if ( is_feed() || is_embed() || is_robots() || is_trackback() ) {
@@ -166,7 +166,7 @@ class OAIP_Core {
 			);
 		}
 
-		if ( apply_filters( 'oaip_track_page_view', true ) ) {
+		if ( apply_filters( 'openpixel_track_page_view', true ) ) {
 			$this->bus->track( $this->build_page_view_event() );
 		}
 
@@ -174,7 +174,7 @@ class OAIP_Core {
 		 * Integrations add page-specific events / user data here, before
 		 * <head> is printed.
 		 */
-		do_action( 'oaip_prepare', $this->bus, $this );
+		do_action( 'openpixel_prepare', $this->bus, $this );
 	}
 
 	private function build_page_view_event() {
@@ -213,10 +213,10 @@ class OAIP_Core {
 		}
 
 		wp_enqueue_script(
-			'oaip',
-			OAIP_PLUGIN_URL . 'assets/js/oaip.js',
+			'openpixel',
+			OPENPIXEL_PLUGIN_URL . 'assets/js/openpixel.js',
 			array(),
-			OAIP_VERSION,
+			OPENPIXEL_VERSION,
 			true
 		);
 
@@ -229,7 +229,7 @@ class OAIP_Core {
 			);
 		}
 
-		wp_add_inline_script( 'oaip', 'window.oaipConfig = ' . wp_json_encode( $config ) . ';', 'before' );
+		wp_add_inline_script( 'openpixel', 'window.openPixelConfig = ' . wp_json_encode( $config ) . ';', 'before' );
 	}
 
 	public function output_head() {
@@ -251,18 +251,18 @@ class OAIP_Core {
 		$payloads = $this->build_payloads( $this->bus->drain_browser_events(), $active );
 
 		// Placeholder replaced by WooCommerce AJAX fragments (see integration).
-		echo '<div id="oaip-pending" hidden></div>' . "\n";
+		echo '<div id="openpixel-pending" hidden></div>' . "\n";
 
 		if ( ! $payloads ) {
 			return;
 		}
 
-		$nonce      = apply_filters( 'oaip_script_nonce', '' );
+		$nonce      = apply_filters( 'openpixel_script_nonce', '' );
 		$nonce_attr = $nonce ? ' nonce="' . esc_attr( $nonce ) . '"' : '';
 
 		echo '<script' . $nonce_attr . '>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			. 'window.oaipEvents=(window.oaipEvents||[]).concat(' . wp_json_encode( $payloads ) . ');'
-			. 'if(window.oaip&&window.oaip.flush){window.oaip.flush();}'
+			. 'window.openPixelEvents=(window.openPixelEvents||[]).concat(' . wp_json_encode( $payloads ) . ');'
+			. 'if(window.openPixel&&window.openPixel.flush){window.openPixel.flush();}'
 			. "</script>\n";
 	}
 
@@ -270,7 +270,7 @@ class OAIP_Core {
 	 * Convert normalized events to per-provider browser payloads.
 	 *
 	 * @param array           $events    Normalized events.
-	 * @param OAIP_Provider[] $providers Active providers.
+	 * @param OpenPixel_Provider[] $providers Active providers.
 	 * @return array
 	 */
 	public function build_payloads( array $events, array $providers = array() ) {

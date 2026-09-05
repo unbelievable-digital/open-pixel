@@ -10,14 +10,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class OAIP_Admin {
+class OpenPixel_Admin {
 
-	const PAGE_SLUG = 'oaip-pixel-manager';
+	const PAGE_SLUG = 'openpixel-pixel-manager';
 
-	/** @var OAIP_Core */
+	/** @var OpenPixel_Core */
 	private $core;
 
-	public function __construct( OAIP_Core $core ) {
+	public function __construct( OpenPixel_Core $core ) {
 		$this->core = $core;
 	}
 
@@ -25,14 +25,14 @@ class OAIP_Admin {
 		add_action( 'admin_menu', array( $this, 'add_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'admin_post_oaip_capi_test', array( $this, 'handle_capi_test' ) );
-		add_filter( 'plugin_action_links_' . plugin_basename( OAIP_PLUGIN_FILE ), array( $this, 'plugin_action_links' ) );
+		add_action( 'admin_post_openpixel_capi_test', array( $this, 'handle_capi_test' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( OPENPIXEL_PLUGIN_FILE ), array( $this, 'plugin_action_links' ) );
 	}
 
 	public function add_menu() {
 		add_options_page(
-			__( 'Pixel Manager', 'openai-pixel' ),
-			__( 'Pixel Manager', 'openai-pixel' ),
+			__( 'Pixel Manager', 'open-pixel' ),
+			__( 'Pixel Manager', 'open-pixel' ),
 			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
@@ -41,7 +41,7 @@ class OAIP_Admin {
 
 	public function plugin_action_links( $links ) {
 		$url = admin_url( 'options-general.php?page=' . self::PAGE_SLUG );
-		array_unshift( $links, '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Settings', 'openai-pixel' ) . '</a>' );
+		array_unshift( $links, '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Settings', 'open-pixel' ) . '</a>' );
 		return $links;
 	}
 
@@ -49,13 +49,13 @@ class OAIP_Admin {
 		if ( 'settings_page_' . self::PAGE_SLUG !== $hook ) {
 			return;
 		}
-		wp_enqueue_style( 'oaip-admin', OAIP_PLUGIN_URL . 'assets/css/admin.css', array(), OAIP_VERSION );
+		wp_enqueue_style( 'openpixel-admin', OPENPIXEL_PLUGIN_URL . 'assets/css/admin.css', array(), OPENPIXEL_VERSION );
 	}
 
 	public function register_settings() {
 		register_setting(
-			'oaip_settings_group',
-			OAIP_OPTION_KEY,
+			'openpixel_settings_group',
+			OPENPIXEL_OPTION_KEY,
 			array(
 				'type'              => 'array',
 				'sanitize_callback' => array( $this, 'sanitize_settings' ),
@@ -82,14 +82,14 @@ class OAIP_Admin {
 
 	public function handle_capi_test() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Not allowed.', 'openai-pixel' ) );
+			wp_die( esc_html__( 'Not allowed.', 'open-pixel' ) );
 		}
-		check_admin_referer( 'oaip_capi_test' );
+		check_admin_referer( 'openpixel_capi_test' );
 
 		$provider = $this->core->get_provider( 'openai' );
 		$redirect = admin_url( 'options-general.php?page=' . self::PAGE_SLUG );
 
-		if ( ! $provider instanceof OAIP_Provider_OpenAI ) {
+		if ( ! $provider instanceof OpenPixel_Provider_OpenAI ) {
 			wp_safe_redirect( $redirect );
 			exit;
 		}
@@ -97,7 +97,7 @@ class OAIP_Admin {
 		$event = $provider->to_capi_event(
 			array(
 				'name'         => 'purchase',
-				'event_id'     => 'oaip_test_' . time(),
+				'event_id'     => 'openpixel_test_' . time(),
 				'value'        => 1.00,
 				'currency'     => 'USD',
 				'items'        => array(
@@ -115,13 +115,13 @@ class OAIP_Admin {
 		$result = $provider->capi()->send( array( $event ), true );
 
 		if ( is_wp_error( $result ) ) {
-			set_transient( 'oaip_admin_notice', array( 'type' => 'error', 'text' => $result->get_error_message() ), 60 );
+			set_transient( 'openpixel_admin_notice', array( 'type' => 'error', 'text' => $result->get_error_message() ), 60 );
 		} else {
 			set_transient(
-				'oaip_admin_notice',
+				'openpixel_admin_notice',
 				array(
 					'type' => 'success',
-					'text' => __( 'Conversions API accepted the test event (validate_only). Credentials and payload are valid.', 'openai-pixel' ),
+					'text' => __( 'Conversions API accepted the test event (validate_only). Credentials and payload are valid.', 'open-pixel' ),
 				),
 				60
 			);
@@ -140,9 +140,9 @@ class OAIP_Admin {
 			return;
 		}
 
-		$notice = get_transient( 'oaip_admin_notice' );
+		$notice = get_transient( 'openpixel_admin_notice' );
 		if ( $notice ) {
-			delete_transient( 'oaip_admin_notice' );
+			delete_transient( 'openpixel_admin_notice' );
 			printf(
 				'<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>',
 				esc_attr( $notice['type'] ),
@@ -150,11 +150,11 @@ class OAIP_Admin {
 			);
 		}
 		?>
-		<div class="wrap oaip-wrap">
-			<h1><?php esc_html_e( 'Pixel Manager', 'openai-pixel' ); ?></h1>
+		<div class="wrap openpixel-wrap">
+			<h1><?php esc_html_e( 'Pixel Manager', 'open-pixel' ); ?></h1>
 
 			<form method="post" action="options.php">
-				<?php settings_fields( 'oaip_settings_group' ); ?>
+				<?php settings_fields( 'openpixel_settings_group' ); ?>
 
 				<?php foreach ( $this->core->get_providers() as $provider ) : ?>
 					<?php $this->render_provider( $provider ); ?>
@@ -169,7 +169,7 @@ class OAIP_Admin {
 		<?php
 	}
 
-	private function render_provider( OAIP_Provider $provider ) {
+	private function render_provider( OpenPixel_Provider $provider ) {
 		$id       = $provider->get_id();
 		$settings = $provider->get_settings();
 		?>
@@ -206,8 +206,8 @@ class OAIP_Admin {
 	}
 
 	private function render_field( $provider_id, $key, array $field, $value ) {
-		$name    = OAIP_OPTION_KEY . '[' . $provider_id . '][' . $key . ']';
-		$dom_id  = 'oaip-' . $provider_id . '-' . $key;
+		$name    = OPENPIXEL_OPTION_KEY . '[' . $provider_id . '][' . $key . ']';
+		$dom_id  = 'openpixel-' . $provider_id . '-' . $key;
 		$type    = isset( $field['type'] ) ? $field['type'] : 'text';
 		$label   = isset( $field['label'] ) ? $field['label'] : $key;
 		$desc    = isset( $field['description'] ) ? $field['description'] : '';
@@ -229,7 +229,7 @@ class OAIP_Admin {
 							esc_attr( $dom_id ),
 							esc_attr( $name ),
 							checked( ! empty( $value ), true, false ),
-							esc_html__( 'Yes', 'openai-pixel' )
+							esc_html__( 'Yes', 'open-pixel' )
 						);
 						break;
 
@@ -283,16 +283,16 @@ class OAIP_Admin {
 
 	private function render_capi_test() {
 		$provider = $this->core->get_provider( 'openai' );
-		if ( ! $provider instanceof OAIP_Provider_OpenAI || ! $provider->get_setting( 'capi_enabled' ) ) {
+		if ( ! $provider instanceof OpenPixel_Provider_OpenAI || ! $provider->get_setting( 'capi_enabled' ) ) {
 			return;
 		}
 		?>
-		<h2 class="title"><?php esc_html_e( 'Test the Conversions API', 'openai-pixel' ); ?></h2>
-		<p><?php esc_html_e( 'Sends one order_created event with validate_only = true. Nothing is recorded; OpenAI only checks the key and payload.', 'openai-pixel' ); ?></p>
+		<h2 class="title"><?php esc_html_e( 'Test the Conversions API', 'open-pixel' ); ?></h2>
+		<p><?php esc_html_e( 'Sends one order_created event with validate_only = true. Nothing is recorded; OpenAI only checks the key and payload.', 'open-pixel' ); ?></p>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<input type="hidden" name="action" value="oaip_capi_test" />
-			<?php wp_nonce_field( 'oaip_capi_test' ); ?>
-			<?php submit_button( __( 'Send test event', 'openai-pixel' ), 'secondary', 'submit', false ); ?>
+			<input type="hidden" name="action" value="openpixel_capi_test" />
+			<?php wp_nonce_field( 'openpixel_capi_test' ); ?>
+			<?php submit_button( __( 'Send test event', 'open-pixel' ), 'secondary', 'submit', false ); ?>
 		</form>
 		<?php
 	}
@@ -301,11 +301,11 @@ class OAIP_Admin {
 		$wc_active = class_exists( 'WooCommerce' );
 		$as_active = function_exists( 'as_schedule_single_action' );
 		?>
-		<h2 class="title"><?php esc_html_e( 'Status', 'openai-pixel' ); ?></h2>
-		<ul class="oaip-status">
-			<li><?php echo $wc_active ? '✅' : '➖'; ?> <?php esc_html_e( 'WooCommerce', 'openai-pixel' ); ?>: <?php echo $wc_active ? esc_html__( 'active — product, cart, checkout and order events are tracked.', 'openai-pixel' ) : esc_html__( 'not active — only page_viewed and registration events are tracked.', 'openai-pixel' ); ?></li>
-			<li><?php echo $as_active ? '✅' : '➖'; ?> <?php esc_html_e( 'Action Scheduler', 'openai-pixel' ); ?>: <?php echo $as_active ? esc_html__( 'available — server-side events are queued with retries.', 'openai-pixel' ) : esc_html__( 'not available — WP-Cron is used instead.', 'openai-pixel' ); ?></li>
-			<li>ℹ️ <?php esc_html_e( 'If your site enforces a Content Security Policy, allow script-src https://bzrcdn.openai.com, connect-src https://bzr.openai.com https://bzrcdn.openai.com and img-src https://bzr.openai.com.', 'openai-pixel' ); ?></li>
+		<h2 class="title"><?php esc_html_e( 'Status', 'open-pixel' ); ?></h2>
+		<ul class="openpixel-status">
+			<li><?php echo $wc_active ? '✅' : '➖'; ?> <?php esc_html_e( 'WooCommerce', 'open-pixel' ); ?>: <?php echo $wc_active ? esc_html__( 'active — product, cart, checkout and order events are tracked.', 'open-pixel' ) : esc_html__( 'not active — only page_viewed and registration events are tracked.', 'open-pixel' ); ?></li>
+			<li><?php echo $as_active ? '✅' : '➖'; ?> <?php esc_html_e( 'Action Scheduler', 'open-pixel' ); ?>: <?php echo $as_active ? esc_html__( 'available — server-side events are queued with retries.', 'open-pixel' ) : esc_html__( 'not available — WP-Cron is used instead.', 'open-pixel' ); ?></li>
+			<li>ℹ️ <?php esc_html_e( 'If your site enforces a Content Security Policy, allow script-src https://bzrcdn.openai.com, connect-src https://bzr.openai.com https://bzrcdn.openai.com and img-src https://bzr.openai.com.', 'open-pixel' ); ?></li>
 		</ul>
 		<?php
 	}

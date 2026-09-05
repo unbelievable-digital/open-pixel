@@ -8,14 +8,14 @@
  *  - oaiq("consent", false) before init when consent is required
  *  - oaiq("measure", event, data, options)
  *  - <noscript> image tag fallback (https://developers.openai.com/ads/image-tag)
- *  - Conversions API delegation (see OAIP_OpenAI_CAPI)
+ *  - Conversions API delegation (see OpenPixel_OpenAI_CAPI)
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class OAIP_Provider_OpenAI extends OAIP_Provider {
+class OpenPixel_Provider_OpenAI extends OpenPixel_Provider {
 
 	const SDK_URL       = 'https://bzrcdn.openai.com/sdk/oaiq.min.js';
 	const IMAGE_TAG_URL = 'https://bzr.openai.com/v1/sdk/events';
@@ -37,7 +37,7 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 		'custom'         => array( 'custom', 'custom' ),
 	);
 
-	/** @var OAIP_OpenAI_CAPI|null */
+	/** @var OpenPixel_OpenAI_CAPI|null */
 	private $capi;
 
 	public function get_id() {
@@ -45,79 +45,79 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 	}
 
 	public function get_label() {
-		return __( 'OpenAI Pixel (ChatGPT Ads)', 'openai-pixel' );
+		return __( 'OpenAI (ChatGPT Ads Measurement Pixel)', 'open-pixel' );
 	}
 
 	public function get_description() {
-		return __( 'Create a Pixel ID (and, for server-side events, a Conversions API key) in the Conversions tab of ChatGPT Ads Manager.', 'openai-pixel' );
+		return __( 'Create a Pixel ID (and, for server-side events, a Conversions API key) in the Conversions tab of ChatGPT Ads Manager.', 'open-pixel' );
 	}
 
 	public function get_fields() {
 		return array(
 			'enabled'           => array(
-				'label'   => __( 'Enable OpenAI Pixel', 'openai-pixel' ),
+				'label'   => __( 'Enable OpenAI pixel', 'open-pixel' ),
 				'type'    => 'checkbox',
 				'default' => false,
 			),
 			'pixel_id'          => array(
-				'label'       => __( 'Pixel ID', 'openai-pixel' ),
+				'label'       => __( 'Pixel ID', 'open-pixel' ),
 				'type'        => 'text',
 				'default'     => '',
-				'description' => __( 'From Ads Manager > Conversions. Separate multiple Pixel IDs with commas; every event is sent to all of them.', 'openai-pixel' ),
+				'description' => __( 'From Ads Manager > Conversions. Separate multiple Pixel IDs with commas; every event is sent to all of them.', 'open-pixel' ),
 			),
 			'debug'             => array(
-				'label'       => __( 'Debug mode', 'openai-pixel' ),
+				'label'       => __( 'Debug mode', 'open-pixel' ),
 				'type'        => 'checkbox',
 				'default'     => false,
-				'description' => __( 'Logs SDK activity to the browser console. Turn off in production.', 'openai-pixel' ),
+				'description' => __( 'Logs SDK activity to the browser console. Turn off in production.', 'open-pixel' ),
 			),
 			'exclude_admins'    => array(
-				'label'       => __( 'Do not track administrators', 'openai-pixel' ),
+				'label'       => __( 'Do not track administrators', 'open-pixel' ),
 				'type'        => 'checkbox',
 				'default'     => true,
-				'description' => __( 'Skip the pixel entirely for logged-in users who can manage options.', 'openai-pixel' ),
+				'description' => __( 'Skip the pixel entirely for logged-in users who can manage options.', 'open-pixel' ),
 			),
 			'consent_mode'      => array(
-				'label'       => __( 'Consent', 'openai-pixel' ),
+				'label'       => __( 'Consent', 'open-pixel' ),
 				'type'        => 'select',
 				'default'     => 'default',
 				'options'     => array(
-					'default' => __( 'Measure immediately (SDK default)', 'openai-pixel' ),
-					'require' => __( 'Require consent first', 'openai-pixel' ),
+					'default' => __( 'Measure immediately (SDK default)', 'open-pixel' ),
+					'require' => __( 'Require consent first', 'open-pixel' ),
 				),
-				'description' => __( 'With "Require consent", the pixel starts with consent = false. Grant it from your cookie banner by calling window.oaip.grantConsent(), or via the WP Consent API ("marketing" category), which is detected automatically.', 'openai-pixel' ),
+				'description' => __( 'With "Require consent", the pixel starts with consent = false. Grant it from your cookie banner by calling window.openPixel.grantConsent(), or via the WP Consent API ("marketing" category), which is detected automatically.', 'open-pixel' ),
 			),
 			'advanced_matching' => array(
-				'label'       => __( 'Send hashed customer data', 'openai-pixel' ),
+				'label'       => __( 'Send hashed customer data', 'open-pixel' ),
 				'type'        => 'checkbox',
 				'default'     => true,
-				'description' => __( 'Improves conversion matching. Email, phone and names are normalized and SHA-256 hashed on the server before they reach the browser; country/city/region/postal code are sent as plain text, as the docs require.', 'openai-pixel' ),
+				'description' => __( 'Improves conversion matching. Email, phone and names are normalized and SHA-256 hashed on the server before they reach the browser; country/city/region/postal code are sent as plain text, as the docs require.', 'open-pixel' ),
 			),
 			'noscript'          => array(
-				'label'       => __( 'No-JavaScript fallback', 'openai-pixel' ),
+				'label'       => __( 'No-JavaScript fallback', 'open-pixel' ),
 				'type'        => 'checkbox',
 				'default'     => true,
-				'description' => __( 'Adds a <noscript> image tag that records page_viewed when JavaScript is unavailable.', 'openai-pixel' ),
+				'description' => __( 'Adds a <noscript> image tag that records page_viewed when JavaScript is unavailable.', 'open-pixel' ),
 			),
 			'woocommerce'       => array(
-				'section'     => __( 'WooCommerce', 'openai-pixel' ),
-				'label'       => __( 'Track WooCommerce events', 'openai-pixel' ),
+				'section'     => __( 'WooCommerce', 'open-pixel' ),
+				'label'       => __( 'Track WooCommerce events', 'open-pixel' ),
 				'type'        => 'checkbox',
 				'default'     => true,
-				'description' => __( 'contents_viewed (product pages), items_added (add to cart), checkout_started, order_created (thank-you page) and registration_completed.', 'openai-pixel' ),
+				'description' => __( 'contents_viewed (product pages), items_added (add to cart), checkout_started, order_created (thank-you page) and registration_completed.', 'open-pixel' ),
 			),
 			'capi_enabled'      => array(
-				'section'     => __( 'Conversions API (server-side)', 'openai-pixel' ),
-				'label'       => __( 'Send orders through the Conversions API', 'openai-pixel' ),
+				'section'     => __( 'Conversions API (server-side)', 'open-pixel' ),
+				'label'       => __( 'Send orders through the Conversions API', 'open-pixel' ),
 				'type'        => 'checkbox',
 				'default'     => false,
-				'description' => __( 'Sends order_created from the server when payment completes, using the same event ID as the browser event so OpenAI deduplicates them. More reliable than the browser pixel alone.', 'openai-pixel' ),
+				'description' => __( 'Sends order_created from the server when payment completes, using the same event ID as the browser event so OpenAI deduplicates them. More reliable than the browser pixel alone.', 'open-pixel' ),
 			),
 			'capi_api_key'      => array(
-				'label'       => __( 'Conversions API key', 'openai-pixel' ),
+				'label'       => __( 'Conversions API key', 'open-pixel' ),
 				'type'        => 'password',
 				'default'     => '',
-				'description' => __( 'Leave blank to keep the saved key.', 'openai-pixel' ),
+				'description' => __( 'Leave blank to keep the saved key.', 'open-pixel' ),
 			),
 		);
 	}
@@ -140,7 +140,7 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 
 	public function capi() {
 		if ( null === $this->capi ) {
-			$this->capi = new OAIP_OpenAI_CAPI( $this );
+			$this->capi = new OpenPixel_OpenAI_CAPI( $this );
 		}
 		return $this->capi;
 	}
@@ -149,22 +149,22 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 	 * Browser output
 	 * ------------------------------------------------------------------ */
 
-	public function render_head( OAIP_Event_Bus $bus ) {
+	public function render_head( OpenPixel_Event_Bus $bus ) {
 		$pixel_ids = $this->get_pixel_ids();
-		$nonce     = apply_filters( 'oaip_script_nonce', '' );
+		$nonce     = apply_filters( 'openpixel_script_nonce', '' );
 		$nonce_attr = $nonce ? ' nonce="' . esc_attr( $nonce ) . '"' : '';
 
 		$require_consent = 'require' === $this->get_setting( 'consent_mode' );
-		if ( $require_consent && apply_filters( 'oaip_consent_granted', false, $this->get_id() ) ) {
+		if ( $require_consent && apply_filters( 'openpixel_consent_granted', false, $this->get_id() ) ) {
 			$require_consent = false;
 		}
 
 		$user = array();
 		if ( $this->get_setting( 'advanced_matching' ) && $bus->get_user() ) {
-			$user = OAIP_Hash::pixel_user( $bus->get_user() );
+			$user = OpenPixel_Hash::pixel_user( $bus->get_user() );
 		}
 
-		echo "\n<!-- OpenAI Pixel (openai-pixel plugin) -->\n";
+		echo "\n<!-- OpenAI Measurement Pixel (Open Pixel plugin) -->\n";
 		echo '<script' . $nonce_attr . ">\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo "(function (w, d, s, u) {\n"
 			. "  if (w.oaiq) return;\n"
@@ -193,14 +193,14 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 			echo 'oaiq("init", ' . wp_json_encode( $init ) . ");\n";
 		}
 
-		echo "</script>\n<!-- / OpenAI Pixel -->\n";
+		echo "</script>\n<!-- / OpenAI Measurement Pixel -->\n";
 	}
 
-	public function render_footer( OAIP_Event_Bus $bus ) {
+	public function render_footer( OpenPixel_Event_Bus $bus ) {
 		if ( ! $this->get_setting( 'noscript' ) ) {
 			return;
 		}
-		if ( 'require' === $this->get_setting( 'consent_mode' ) && ! apply_filters( 'oaip_consent_granted', false, $this->get_id() ) ) {
+		if ( 'require' === $this->get_setting( 'consent_mode' ) && ! apply_filters( 'openpixel_consent_granted', false, $this->get_id() ) ) {
 			// Docs: render the image tag only after any required consent.
 			return;
 		}
@@ -213,7 +213,7 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 		echo "</noscript>\n";
 	}
 
-	public function get_prelude_payloads( OAIP_Event_Bus $bus ) {
+	public function get_prelude_payloads( OpenPixel_Event_Bus $bus ) {
 		// User data that only became known after <head> (e.g. billing details
 		// on the thank-you page) is sent with a second init, as the docs
 		// describe. Only needed when it differs from what render_head sent —
@@ -263,7 +263,7 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 		$data = array( 'type' => $data_type );
 
 		if ( null !== $event['value'] && $event['currency'] ) {
-			$data['amount']   = OAIP_Money::to_minor( $event['value'], $event['currency'] );
+			$data['amount']   = OpenPixel_Money::to_minor( $event['value'], $event['currency'] );
 			$data['currency'] = $event['currency'];
 		}
 
@@ -303,7 +303,7 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 				$content['quantity'] = $item['quantity'];
 			}
 			if ( null !== $item['price'] && $event['currency'] ) {
-				$content['amount']   = OAIP_Money::to_minor( $item['price'], $event['currency'] );
+				$content['amount']   = OpenPixel_Money::to_minor( $item['price'], $event['currency'] );
 				$content['currency'] = $event['currency'];
 			}
 			if ( $for_capi && $item['variant'] ) {
@@ -351,7 +351,7 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 		list( $openai_event, $data_type ) = self::EVENT_MAP[ $event['name'] ];
 		$ctx = $event['context'];
 
-		$id = ! empty( $event['event_id'] ) ? (string) $event['event_id'] : 'oaip_' . wp_generate_uuid4();
+		$id = ! empty( $event['event_id'] ) ? (string) $event['event_id'] : 'openpixel_' . wp_generate_uuid4();
 
 		$capi_event = array(
 			'id'            => $id,
@@ -375,7 +375,7 @@ class OAIP_Provider_OpenAI extends OAIP_Provider {
 				$raw_user[ $key ] = $ctx[ $key ];
 			}
 		}
-		$user = OAIP_Hash::capi_user( $raw_user );
+		$user = OpenPixel_Hash::capi_user( $raw_user );
 		if ( $user ) {
 			$capi_event['user'] = $user;
 		}

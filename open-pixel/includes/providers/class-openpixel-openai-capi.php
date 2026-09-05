@@ -8,24 +8,24 @@
  *
  * Events are delivered asynchronously (Action Scheduler when WooCommerce
  * ships it, WP-Cron otherwise) with a few retries, and logged to the
- * WooCommerce logger under the "openai-pixel" source when available.
+ * WooCommerce logger under the "open-pixel" source when available.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class OAIP_OpenAI_CAPI {
+class OpenPixel_OpenAI_CAPI {
 
 	const ENDPOINT           = 'https://bzr.openai.com/v1/events';
-	const ACTION_HOOK        = 'oaip_openai_capi_send';
-	const INTEGRATION_SOURCE = 'openai-pixel-wordpress';
+	const ACTION_HOOK        = 'openpixel_openai_capi_send';
+	const INTEGRATION_SOURCE = 'open-pixel-wordpress';
 	const MAX_ATTEMPTS       = 4;
 
-	/** @var OAIP_Provider_OpenAI */
+	/** @var OpenPixel_Provider_OpenAI */
 	private $provider;
 
-	public function __construct( OAIP_Provider_OpenAI $provider ) {
+	public function __construct( OpenPixel_Provider_OpenAI $provider ) {
 		$this->provider = $provider;
 		add_action( self::ACTION_HOOK, array( $this, 'deliver' ), 10, 2 );
 	}
@@ -57,7 +57,7 @@ class OAIP_OpenAI_CAPI {
 		$args = array( $capi_event, (int) $attempt );
 
 		if ( function_exists( 'as_schedule_single_action' ) ) {
-			as_schedule_single_action( time() + $delay, self::ACTION_HOOK, $args, 'openai-pixel' );
+			as_schedule_single_action( time() + $delay, self::ACTION_HOOK, $args, 'open-pixel' );
 			return;
 		}
 
@@ -90,7 +90,7 @@ class OAIP_OpenAI_CAPI {
 		}
 
 		$this->log( sprintf( 'Event %s (%s) delivered.', $capi_event['id'], $capi_event['type'] ), 'info' );
-		do_action( 'oaip_openai_capi_delivered', $capi_event, $result );
+		do_action( 'openpixel_openai_capi_delivered', $capi_event, $result );
 	}
 
 	/**
@@ -105,7 +105,7 @@ class OAIP_OpenAI_CAPI {
 		$pixel_ids = $this->provider->get_pixel_ids();
 
 		if ( ! $api_key || ! $pixel_ids ) {
-			return new WP_Error( 'oaip_capi_unconfigured', __( 'Conversions API key or Pixel ID missing.', 'openai-pixel' ) );
+			return new WP_Error( 'openpixel_capi_unconfigured', __( 'Conversions API key or Pixel ID missing.', 'open-pixel' ) );
 		}
 
 		$body = array(
@@ -144,7 +144,7 @@ class OAIP_OpenAI_CAPI {
 					: substr( $raw, 0, 500 );
 
 				return new WP_Error(
-					'oaip_capi_http_' . $code,
+					'openpixel_capi_http_' . $code,
 					sprintf( 'HTTP %d: %s', $code, $message ),
 					array( 'status' => $code, 'pixel_id' => $pixel_id )
 				);
@@ -168,11 +168,11 @@ class OAIP_OpenAI_CAPI {
 
 	public function log( $message, $level = 'info' ) {
 		if ( function_exists( 'wc_get_logger' ) ) {
-			wc_get_logger()->log( $level, $message, array( 'source' => 'openai-pixel' ) );
+			wc_get_logger()->log( $level, $message, array( 'source' => 'open-pixel' ) );
 			return;
 		}
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( '[openai-pixel] ' . strtoupper( $level ) . ': ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( '[open-pixel] ' . strtoupper( $level ) . ': ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
 	}
 }

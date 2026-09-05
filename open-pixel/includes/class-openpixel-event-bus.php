@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class OAIP_Event_Bus {
+class OpenPixel_Event_Bus {
 
 	const NAMES = array(
 		'page_view',
@@ -46,7 +46,7 @@ class OAIP_Event_Bus {
 		'custom',
 	);
 
-	const SESSION_KEY   = 'oaip_pending_events';
+	const SESSION_KEY   = 'openpixel_pending_events';
 	const TRANSIENT_TTL = 15 * MINUTE_IN_SECONDS;
 
 	/** @var array Events queued during this request for the browser. */
@@ -70,13 +70,13 @@ class OAIP_Event_Bus {
 		/**
 		 * Last chance to change or drop an event. Return null/false to drop.
 		 */
-		$event = apply_filters( 'oaip_track_event', $event );
+		$event = apply_filters( 'openpixel_track_event', $event );
 		if ( ! $event ) {
 			return;
 		}
 
 		if ( 'server' === $event['channel'] ) {
-			do_action( 'oaip_server_event', $event );
+			do_action( 'openpixel_server_event', $event );
 			return;
 		}
 
@@ -197,7 +197,7 @@ class OAIP_Event_Bus {
 
 		$event = wp_parse_args( $event, $defaults );
 		$event['name']     = $name;
-		$event['currency'] = OAIP_Money::normalize_currency( $event['currency'] );
+		$event['currency'] = OpenPixel_Money::normalize_currency( $event['currency'] );
 		$event['channel']  = 'server' === $event['channel'] ? 'server' : 'browser';
 
 		if ( null !== $event['value'] && '' === $event['currency'] ) {

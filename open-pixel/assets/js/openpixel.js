@@ -1,23 +1,23 @@
 /**
- * OpenAI Pixel — front-end runtime.
+ * Open Pixel — front-end runtime.
  *
  * PHP emits provider payloads as { provider: "openai", args: [...], event_id }.
  * Each provider registers a handler; the OpenAI handler simply forwards
  * args to window.oaiq (the official SDK queue). Payloads can arrive:
- *   - inline in the footer (window.oaipEvents),
- *   - inside WooCommerce AJAX fragments (#oaip-pending[data-oaip-events]).
+ *   - inline in the footer (window.openPixelEvents),
+ *   - inside WooCommerce AJAX fragments (#openpixel-pending[data-openpixel-events]).
  */
 (function (window, document) {
 	'use strict';
 
-	var oaip = (window.oaip = window.oaip || {});
+	var openPixel = (window.openPixel = window.openPixel || {});
 	var handlers = {};
 	var queue = [];
 	var seen = loadSeen();
 
 	function loadSeen() {
 		try {
-			var raw = window.sessionStorage.getItem('oaip_seen');
+			var raw = window.sessionStorage.getItem('openpixel_seen');
 			return raw ? JSON.parse(raw) : {};
 		} catch (e) {
 			return {};
@@ -36,28 +36,28 @@
 					delete seen[k];
 				});
 			}
-			window.sessionStorage.setItem('oaip_seen', JSON.stringify(seen));
+			window.sessionStorage.setItem('openpixel_seen', JSON.stringify(seen));
 		} catch (e) {
 			/* storage unavailable — fine */
 		}
 	}
 
-	oaip.register = function (providerId, handler) {
+	openPixel.register = function (providerId, handler) {
 		handlers[providerId] = handler;
-		oaip.flush();
+		openPixel.flush();
 	};
 
-	oaip.push = function (payload) {
+	openPixel.push = function (payload) {
 		if (payload && typeof payload === 'object') {
 			queue.push(payload);
 		}
-		oaip.flush();
+		openPixel.flush();
 	};
 
-	oaip.flush = function () {
-		if (window.oaipEvents && window.oaipEvents.length) {
-			queue = queue.concat(window.oaipEvents);
-			window.oaipEvents = [];
+	openPixel.flush = function () {
+		if (window.openPixelEvents && window.openPixelEvents.length) {
+			queue = queue.concat(window.openPixelEvents);
+			window.openPixelEvents = [];
 		}
 
 		var rest = [];
@@ -77,7 +77,7 @@
 				remember(payload.event_id);
 			} catch (e) {
 				if (window.console && console.error) {
-					console.error('[openai-pixel]', e);
+					console.error('[open-pixel]', e);
 				}
 			}
 		});
@@ -88,34 +88,34 @@
 	 * OpenAI provider
 	 * ---------------------------------------------------------------- */
 
-	oaip.register('openai', function (payload) {
+	openPixel.register('openai', function (payload) {
 		if (typeof window.oaiq !== 'function' || !payload.args) {
 			return;
 		}
 		window.oaiq.apply(null, payload.args);
 	});
 
-	oaip.grantConsent = function () {
+	openPixel.grantConsent = function () {
 		if (typeof window.oaiq === 'function') {
 			window.oaiq('consent', true);
 		}
 	};
 
-	oaip.revokeConsent = function () {
+	openPixel.revokeConsent = function () {
 		if (typeof window.oaiq === 'function') {
 			window.oaiq('consent', false);
 		}
 	};
 
 	function consentRequired() {
-		var cfg = window.oaipConfig && window.oaipConfig.providers && window.oaipConfig.providers.openai;
+		var cfg = window.openPixelConfig && window.openPixelConfig.providers && window.openPixelConfig.providers.openai;
 		return !!(cfg && cfg.consentMode === 'require');
 	}
 
 	// WP Consent API (https://wordpress.org/plugins/wp-consent-api/) integration.
 	if (consentRequired()) {
 		if (typeof window.wp_has_consent === 'function' && window.wp_has_consent('marketing')) {
-			oaip.grantConsent();
+			openPixel.grantConsent();
 		}
 		document.addEventListener('wp_listen_for_consent_change', function (e) {
 			var detail = e && e.detail;
@@ -123,9 +123,9 @@
 				return;
 			}
 			if (detail.marketing === 'allow') {
-				oaip.grantConsent();
+				openPixel.grantConsent();
 			} else if (detail.marketing === 'deny') {
-				oaip.revokeConsent();
+				openPixel.revokeConsent();
 			}
 		});
 	}
@@ -135,19 +135,19 @@
 	 * ---------------------------------------------------------------- */
 
 	function readPendingFragment() {
-		var el = document.getElementById('oaip-pending');
+		var el = document.getElementById('openpixel-pending');
 		if (!el) {
 			return;
 		}
-		var raw = el.getAttribute('data-oaip-events');
+		var raw = el.getAttribute('data-openpixel-events');
 		if (!raw) {
 			return;
 		}
-		el.removeAttribute('data-oaip-events');
+		el.removeAttribute('data-openpixel-events');
 		try {
 			var payloads = JSON.parse(raw);
 			if (Array.isArray(payloads)) {
-				payloads.forEach(oaip.push);
+				payloads.forEach(openPixel.push);
 			}
 		} catch (e) {
 			/* ignore malformed fragment */
@@ -164,10 +164,10 @@
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', function () {
 			readPendingFragment();
-			oaip.flush();
+			openPixel.flush();
 		});
 	} else {
 		readPendingFragment();
-		oaip.flush();
+		openPixel.flush();
 	}
 })(window, document);

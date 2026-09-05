@@ -7,4 +7,4 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-delete_option( 'oaip_settings' );
+delete_option( 'openpixel_settings' );

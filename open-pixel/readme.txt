@@ -8,7 +8,7 @@ Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Conversion pixel manager for WordPress and WooCommerce. OpenAI (ChatGPT Ads) Measurement Pixel and Conversions API today, more providers on the same event bus.
+Conversion pixel manager for WordPress and WooCommerce. OpenAI (ChatGPT Ads) pixel and Conversions API today, more providers next.
 
 == Description ==
 

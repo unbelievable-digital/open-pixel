@@ -37,6 +37,7 @@ class OpenPixel_Integration_WooCommerce {
 		}
 
 		// Browser events.
+		add_filter( 'openpixel_page_view_item', array( $this, 'label_wc_pages' ) );
 		add_action( 'openpixel_prepare', array( $this, 'prepare_page_events' ), 10, 1 );
 		add_action( 'woocommerce_add_to_cart', array( $this, 'track_add_to_cart' ), 10, 6 );
 		add_filter( 'woocommerce_add_to_cart_fragments', array( $this, 'add_pending_events_fragment' ) );
@@ -87,7 +88,27 @@ class OpenPixel_Integration_WooCommerce {
 		}
 	}
 
+	/**
+	 * WooCommerce endpoints all render under the Checkout/My Account pages;
+	 * give the ones that matter for attribution their own page ids.
+	 */
+	public function label_wc_pages( $item ) {
+		if ( is_order_received_page() ) {
+			return array( 'id' => 'order-received', 'name' => 'Order received' );
+		}
+		if ( function_exists( 'is_checkout_pay_page' ) && is_checkout_pay_page() ) {
+			return array( 'id' => 'order-pay', 'name' => 'Order payment' );
+		}
+		return $item;
+	}
+
 	private function prepare_product_view( OpenPixel_Event_Bus $bus ) {
+		// A classic (non-AJAX) add-to-cart re-renders the product page in the
+		// same request; that reload is not a new product view.
+		if ( did_action( 'woocommerce_add_to_cart' ) || ! empty( $_REQUEST['add-to-cart'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
 		$product = wc_get_product( get_queried_object_id() );
 		if ( ! $product ) {
 			return;

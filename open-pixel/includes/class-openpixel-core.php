@@ -200,10 +200,18 @@ class OpenPixel_Core {
 			$item['name'] = 'Not found';
 		}
 
+		/**
+		 * Let integrations relabel the page (e.g. WooCommerce's order-received
+		 * endpoint is technically the Checkout page).
+		 *
+		 * @param array $item array( 'id' => string, 'name' => string )
+		 */
+		$item = apply_filters( 'openpixel_page_view_item', $item );
+
 		return array(
 			'name'         => 'page_view',
 			'content_type' => 'page',
-			'items'        => $item['id'] ? array( $item ) : array(),
+			'items'        => ! empty( $item['id'] ) ? array( $item ) : array(),
 		);
 	}
 

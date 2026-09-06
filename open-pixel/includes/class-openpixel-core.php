@@ -39,6 +39,9 @@ class OpenPixel_Core {
 			$wc->init();
 		}
 
+		$this->feed = new OpenPixel_Product_Feed();
+		$this->feed->init();
+
 		do_action( 'openpixel_init', $this );
 	}
 
@@ -88,6 +91,13 @@ class OpenPixel_Core {
 			}
 		}
 		return $active;
+	}
+
+	/** @var OpenPixel_Product_Feed */
+	private $feed;
+
+	public function get_feed() {
+		return $this->feed;
 	}
 
 	public function get_bus() {

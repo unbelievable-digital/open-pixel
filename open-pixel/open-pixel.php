@@ -3,7 +3,7 @@
  * Plugin Name:       Open Pixel
  * Plugin URI:        https://github.com/unbelievable-digital/open-pixel
  * Description:       Conversion pixel manager for WordPress and WooCommerce. Ships the OpenAI (ChatGPT Ads) Measurement Pixel and Conversions API today: page views, product views, add to cart, checkout, purchases and registrations. Meta, Google and more providers plug into the same event bus.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Unbelievable Digital
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'OPENPIXEL_VERSION', '1.1.0' );
+define( 'OPENPIXEL_VERSION', '1.2.0' );
 define( 'OPENPIXEL_PLUGIN_FILE', __FILE__ );
 define( 'OPENPIXEL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OPENPIXEL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -32,6 +32,8 @@ require_once OPENPIXEL_PLUGIN_DIR . 'includes/class-openpixel-provider.php';
 require_once OPENPIXEL_PLUGIN_DIR . 'includes/providers/class-openpixel-openai-capi.php';
 require_once OPENPIXEL_PLUGIN_DIR . 'includes/providers/class-openpixel-provider-openai.php';
 require_once OPENPIXEL_PLUGIN_DIR . 'includes/integrations/class-openpixel-integration-woocommerce.php';
+require_once OPENPIXEL_PLUGIN_DIR . 'includes/feed/class-openpixel-feed-writer.php';
+require_once OPENPIXEL_PLUGIN_DIR . 'includes/feed/class-openpixel-product-feed.php';
 require_once OPENPIXEL_PLUGIN_DIR . 'includes/class-openpixel-core.php';
 require_once OPENPIXEL_PLUGIN_DIR . 'includes/class-openpixel-admin.php';
 

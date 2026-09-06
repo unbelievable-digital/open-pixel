@@ -8,3 +8,28 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 delete_option( 'openpixel_settings' );
+delete_option( 'openpixel_feed_settings' );
+delete_option( 'openpixel_feed_status' );
+delete_option( 'openpixel_feed_schedule_current' );
+
+// Generated feed files.
+$openpixel_uploads = wp_upload_dir();
+$openpixel_dir     = trailingslashit( $openpixel_uploads['basedir'] ) . 'open-pixel';
+if ( is_dir( $openpixel_dir ) ) {
+	foreach ( glob( $openpixel_dir . '/*' ) as $openpixel_file ) {
+		if ( is_file( $openpixel_file ) ) {
+			wp_delete_file( $openpixel_file );
+		}
+	}
+	foreach ( array( '.htaccess' ) as $openpixel_hidden ) {
+		if ( is_file( $openpixel_dir . '/' . $openpixel_hidden ) ) {
+			wp_delete_file( $openpixel_dir . '/' . $openpixel_hidden );
+		}
+	}
+	rmdir( $openpixel_dir ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+}
+
+if ( function_exists( 'as_unschedule_all_actions' ) ) {
+	as_unschedule_all_actions( 'openpixel_feed_scheduled_build', array(), 'open-pixel' );
+	as_unschedule_all_actions( 'openpixel_feed_build_batch', array(), 'open-pixel' );
+}

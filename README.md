@@ -35,6 +35,20 @@ For the Conversions API, also paste the API key from the same tab and use **Send
 - **Track WooCommerce events** — on/off for the whole WooCommerce integration.
 - **Conversions API** — enable + API key. Orders are queued through Action Scheduler (ships with WooCommerce) with retries and logged under WooCommerce > Status > Logs, source `open-pixel`.
 
+## Product feed (ChatGPT Ads product-feed campaigns)
+
+**Settings > Pixel Manager > Product feed.** Builds a catalog from WooCommerce following the [OpenAI product feed spec](https://developers.openai.com/commerce/specs/file-upload/products) and the [Ads product feeds guide](https://developers.openai.com/ads/product-feeds).
+
+- Schemas: **OpenAI format** (`item_id, title, description, url, brand, seller_name, image_url, availability, price, sale_price, group_id, listing_has_variations, variant_dict, gtin, mpn, product_category, dimensions, weight, is_digital, is_ads_eligible, …`) or the **Google-compatible profile** (`id, link, image_link, item_group_id, product_type, identifier_exists, …`).
+- Formats: CSV, TSV, JSONL (OpenAI format only).
+- One row per simple product, one per published variation (same `group_id`, `variant_dict` from attributes). Prices as `79.99 USD` using your tax display settings; `sale_price` when a sale is active; availability `in_stock` / `out_of_stock` / `backorder`.
+- Required fields enforced: products without brand (WooCommerce Brands or the fallback setting), price or image are skipped and counted.
+- Item ids equal WooCommerce product/variation ids — the same ids the pixel sends in `contents[]`, so product-set filters and product insights line up.
+- Built in batches of 200 (inline for "Rebuild now", Action Scheduler for the hourly / twice-daily / daily schedule) into `wp-content/uploads/open-pixel/`, then served at `https://your-site/?openpixel_feed=<token>` with `noindex` and no-cache headers. Add `&download=1` for an attachment. "Rotate URL" invalidates the token.
+- Hooks: `openpixel_feed_row( $row, $product, $parent, $profile )` to adjust or drop rows, `openpixel_feed_columns( $columns, $profile )`, `openpixel_feed_built( $file, $status )`.
+
+OpenAI ingests Ads catalogs via the SFTP location shown in Ads Manager > Feeds; download the file and upload it there, or point any fetcher at the private URL.
+
 ## Content Security Policy
 
 If your site enforces a CSP, add:

@@ -1,0 +1,47 @@
+# Open Pixel — project guide for Claude
+
+WordPress plugin: conversion pixel manager + product feed for ChatGPT Ads. Lives in `open-pixel/` (that folder is what ships). Repo: https://github.com/unbelievable-digital/open-pixel. WordPress.org slug `open-pixel` (submitted for review 2026-09-05, awaiting review).
+
+## Sources of truth (never guess, read these)
+
+- Pixel: https://developers.openai.com/ads/measurement-pixel.md
+- Events + data shapes: https://developers.openai.com/ads/supported-events.md
+- Conversions API: https://developers.openai.com/ads/conversions-api.md
+- Image tag: https://developers.openai.com/ads/image-tag.md
+- Product feeds: https://developers.openai.com/ads/product-feeds.md, field spec https://developers.openai.com/commerce/specs/file-upload/products.md, delta API https://developers.openai.com/ads/delta-feeds.md
+- Append `.md` to any developers.openai.com page for raw markdown. Docs change; re-fetch before implementing anything new.
+
+## Architecture rules
+
+- **Event bus is provider-agnostic.** Integrations (WooCommerce, forms, …) call `openpixel()->get_bus()->track()` with normalized names (`page_view, view_item, add_to_cart, begin_checkout, purchase, sign_up, generate_lead, schedule, subscribe, start_trial, custom`), money in **major units** + currency, raw (unhashed) user data. Never call `oaiq` or a provider API from an integration.
+- **Providers translate.** `OpenPixel_Provider` subclasses map bus events to their API (`to_browser_payload`, `handle_server_event`), declare settings via `get_fields()` (admin renders them generically), and print their own loader in `render_head`. Adding Meta/Google = one PHP class + `window.openPixel.register('<id>', fn)` in JS. Do not add provider-specific branches to core, admin or integrations.
+- **Money:** `OpenPixel_Money::to_minor()` for pixel/CAPI (integer minor units, ISO 4217 exponent, not store decimals). Feed uses major units `79.99 USD`.
+- **Hashing:** `OpenPixel_Hash` implements the documented normalization exactly (phone `+1 (415) 555-2671` must hash to `758fbf68…`). Hash on the server; never send raw PII to the browser or in URLs.
+- **Deduplication:** deterministic `event_id`s — `order_{id}`, `checkout_{cart_hash}`, `reg_{user_id}`, `cart_{key}_{ts}`. Browser and CAPI reuse the same id. Fire purchase once per order (order meta `_openpixel_pixel_fired`, `_openpixel_capi_queued`).
+- **Server-side channel:** `channel => 'server'` events go to `openpixel_server_event` → `OpenPixel_OpenAI_CAPI::queue_event` → Action Scheduler action `openpixel_openai_capi_send` (4 attempts, 5xx/408/429 retry only). The CAPI object must be instantiated eagerly (provider constructor) or cron has no callback.
+- **Events raised without a page** (AJAX add-to-cart, registration redirect) are persisted in the WooCommerce session / user transient and flushed in the next footer or through `woocommerce_add_to_cart_fragments` (`#openpixel-pending`). JS dedups replays via `sessionStorage` `openpixel_seen`.
+- **Product feed:** `OpenPixel_Product_Feed` builds in 200-product batches into `uploads/open-pixel/feed-<hash>.<ext>`, status in option `openpixel_feed_status`, served at `?openpixel_feed=<token>` (`hash_equals`, noindex, no-cache). Item ids must equal the ids used in pixel `contents[]`.
+- **Prefix everything** `openpixel_` / `OpenPixel_` / `OPENPIXEL_`. Text domain `open-pixel`. No `oaip` anywhere.
+- **Names:** plugin is "Open Pixel" (brand-neutral). OpenAI only as the provider label "OpenAI (ChatGPT Ads Measurement Pixel)". Never put a trademark first in name/slug (wp.org guideline 17).
+
+## Conventions
+
+- WordPress coding standards, tabs, `esc_*` on output, `sanitize_*` on input, nonces on admin-post actions, `manage_options` capability. Plugin Check must pass with no errors (`npx pressship verify ./open-pixel`).
+- Keep `readme.txt` (wp.org) and `README.md` (GitHub) in sync; short description ≤ 150 chars; bump `Version` header, `OPENPIXEL_VERSION` and `Stable tag` together; add a changelog entry.
+- `docs/PLAN.md` tracks phases; update checkboxes when shipping.
+- Commit style: Conventional Commits (`feat:`, `fix:`, `docs:`, `design:`), body explains the doc fact behind the change.
+- Assets for wp.org live in `.wordpress-org/` (icon 256/128, banner 1544x500 / 772x250, concept sources in `source/`).
+
+## Testing
+
+- Local store: `npx pressship demo ./open-pixel --port 8881 --skip-browser` (WordPress Playground, SQLite). Site files under `~/.wordpress-playground/sites/<hash>/`; a `dynamic-host.php` mu-plugin makes it reachable over LAN/Tailscale. Admin `admin`/`password`, auto-login `?pressship_auto_login=1`.
+- WooCommerce is installed by unzipping into that site's `wp-content/plugins/` and activating through wp-admin; products/settings created through the WC REST API with the cookie + `X-WP-Nonce`.
+- End-to-end script: `scratchpad/e2e.mjs` (Playwright): wraps `window.oaiq` to log every call, records `bzr.openai.com` responses, walks home → product → add to cart → cart → checkout → COD order → thank-you reload. Expect 202s, `order_created` once, `page_viewed` id `order-received` on reload.
+- Conversions API: admin "Send test event" = `validate_only`. Real delivery is visible in WooCommerce > Status > Logs, source `open-pixel`. Trigger Action Scheduler with `curl wp-cron.php?doing_wp_cron=…`; if an action shows stale `claim_id`, reset it in `wp_actionscheduler_actions`.
+- Feed: enable in the Product feed tab, "Rebuild now", then fetch the private URL; check header row, `price` format, `group_id`/`variant_dict` on variations, skipped count.
+
+## Publishing
+
+- `npx pressship verify ./open-pixel` → `pack` → `publish --submit --dry-run -y`. Real submit needs `pressship login`; the CLI's overview prompt needs a TTY, so call `submit()` from `pressship/dist/wordpress-org/submit.js` with `{ yes: true, overview }` from a script instead of `expect` (spinner floods a pty).
+- After approval: `npx pressship publish ./open-pixel --release`, then upload `.wordpress-org/` assets to SVN `assets/`.
+- Never commit API keys or Pixel IDs; the test store's values live only in its SQLite DB.

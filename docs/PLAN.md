@@ -62,7 +62,29 @@ Events that happen on requests that render no page (AJAX add-to-cart, registrati
 - [ ] `registration_completed` and `lead_created` server-side where a browser event may be lost.
 - [ ] Verify on a real store with a real Pixel ID + API key (debug mode + WooCommerce logs).
 
+## Phase 2b — Product feed (shipped in 1.2.0)
+
+Source: https://developers.openai.com/ads/product-feeds + https://developers.openai.com/commerce/specs/file-upload/products + https://developers.openai.com/ads/delta-feeds
+
+| Fact | Consequence |
+|---|---|
+| Ads catalogs are Google-compatible product feeds uploaded via SFTP from Ads Manager > Feeds; no public upload API. | Plugin generates the file; site owner uploads it or gives OpenAI the private URL. |
+| Two schemas: OpenAI format (`item_id`, `url`, `image_url`, `seller_name`, `is_ads_eligible`) and Google-compatible (`id`, `link`, `image_link`, `item_group_id`). | Schema selector; OpenAI format default. |
+| Required: item_id, title, description, url, brand, seller_name, image_url, availability, price. Money as `79.99 USD`. Variants: same `group_id`, `listing_has_variations=true`, `variant_dict`. | Row builder enforces required fields, skips + counts incomplete products; variations become rows. |
+| CSV/TSV/JSONL, UTF-8, JSON inside cells, booleans `true`/`false`, empty = no value. | `OpenPixel_Feed_Writer`. |
+| Delta Feeds API `PATCH /feeds/{id}/products` updates price/availability/title per variant with the Ads API key; access enabled per account. | Not built yet — see Phase 3. |
+
+- [x] Feed settings tab, schema + format selection, seller/brand defaults, schedule.
+- [x] Batched build (inline + Action Scheduler), private tokenized URL, download, rotate.
+- [x] `openpixel_feed_row` / `openpixel_feed_columns` / `openpixel_feed_built` hooks.
+- [ ] Verify against a real Ads Manager feed upload (SFTP) and Upload History.
+
 ## Phase 3 — More providers & sources
+
+- [ ] Delta Feeds sync: Ads API key + feed id settings; on product price/stock change queue `PATCH /feeds/{feed_id}/products` (minor-unit amounts, `availability.status`), with 403 `product_feed_delta_api_disabled` handling.
+- [ ] Product-feed campaign helper: create `mode: product_feed` campaign, ad group with `product_set` filters and a `product_ad_template` from the admin (Ads API), and show product-segmented insights.
+- [ ] `ads_metadata` / `custom_label_0..4` mapping from product tags or attributes for product-set filters.
+- [ ] Feed health: per-row validation report (missing brand/image/GTIN), row count trend, last fetch time by OpenAI (User-Agent log on the feed endpoint).
 
 - [ ] Meta Pixel + CAPI provider, Google Ads / GA4 provider, TikTok — each a single class on the bus.
 - [ ] WooCommerce Subscriptions → `subscription_created` / `trial_started` (`plan_enrollment`, `plan_id` = product id).

@@ -37,8 +37,15 @@ class OpenPixel_Provider_OpenAI extends OpenPixel_Provider {
 		'custom'         => array( 'custom', 'custom' ),
 	);
 
-	/** @var OpenPixel_OpenAI_CAPI|null */
+	/** @var OpenPixel_OpenAI_CAPI */
 	private $capi;
+
+	public function __construct() {
+		// Instantiated eagerly: the CAPI class registers the Action Scheduler
+		// callback in its constructor, and cron requests never call capi()
+		// otherwise ("no callbacks are registered" failures).
+		$this->capi = new OpenPixel_OpenAI_CAPI( $this );
+	}
 
 	public function get_id() {
 		return 'openai';
@@ -139,9 +146,6 @@ class OpenPixel_Provider_OpenAI extends OpenPixel_Provider {
 	}
 
 	public function capi() {
-		if ( null === $this->capi ) {
-			$this->capi = new OpenPixel_OpenAI_CAPI( $this );
-		}
 		return $this->capi;
 	}
 

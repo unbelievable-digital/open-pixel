@@ -2,8 +2,9 @@
 /**
  * Settings > Pixel Manager.
  *
- * Renders every registered provider's declarative fields, so a new
+ * Tab "Pixels": every registered provider's declarative fields, so a new
  * provider gets a settings section without touching this file.
+ * Tab "Product feed": WooCommerce catalog feed for OpenAI Ads.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -26,6 +27,8 @@ class OpenPixel_Admin {
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_post_openpixel_capi_test', array( $this, 'handle_capi_test' ) );
+		add_action( 'admin_post_openpixel_feed_rebuild', array( $this, 'handle_feed_rebuild' ) );
+		add_action( 'admin_post_openpixel_feed_rotate', array( $this, 'handle_feed_rotate' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( OPENPIXEL_PLUGIN_FILE ), array( $this, 'plugin_action_links' ) );
 	}
 
@@ -40,9 +43,13 @@ class OpenPixel_Admin {
 	}
 
 	public function plugin_action_links( $links ) {
-		$url = admin_url( 'options-general.php?page=' . self::PAGE_SLUG );
-		array_unshift( $links, '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Settings', 'open-pixel' ) . '</a>' );
+		array_unshift( $links, '<a href="' . esc_url( $this->page_url() ) . '">' . esc_html__( 'Settings', 'open-pixel' ) . '</a>' );
 		return $links;
+	}
+
+	private function page_url( $tab = '' ) {
+		$url = admin_url( 'options-general.php?page=' . self::PAGE_SLUG );
+		return $tab ? add_query_arg( 'tab', $tab, $url ) : $url;
 	}
 
 	public function enqueue_assets( $hook ) {
@@ -62,6 +69,16 @@ class OpenPixel_Admin {
 				'default'           => array(),
 			)
 		);
+
+		register_setting(
+			'openpixel_feed_group',
+			OpenPixel_Product_Feed::OPTION_SETTINGS,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( 'OpenPixel_Product_Feed', 'sanitize_settings' ),
+				'default'           => array(),
+			)
+		);
 	}
 
 	public function sanitize_settings( $input ) {
@@ -76,8 +93,12 @@ class OpenPixel_Admin {
 		return $output;
 	}
 
+	private function notice( $type, $text ) {
+		set_transient( 'openpixel_admin_notice', array( 'type' => $type, 'text' => $text ), 60 );
+	}
+
 	/* ---------------------------------------------------------------------
-	 * Conversions API test (validate_only = true)
+	 * Actions
 	 * ------------------------------------------------------------------ */
 
 	public function handle_capi_test() {
@@ -87,47 +108,79 @@ class OpenPixel_Admin {
 		check_admin_referer( 'openpixel_capi_test' );
 
 		$provider = $this->core->get_provider( 'openai' );
-		$redirect = admin_url( 'options-general.php?page=' . self::PAGE_SLUG );
 
-		if ( ! $provider instanceof OpenPixel_Provider_OpenAI ) {
-			wp_safe_redirect( $redirect );
-			exit;
-		}
-
-		$event = $provider->to_capi_event(
-			array(
-				'name'         => 'purchase',
-				'event_id'     => 'openpixel_test_' . time(),
-				'value'        => 1.00,
-				'currency'     => 'USD',
-				'items'        => array(
-					array( 'id' => 'test', 'name' => 'Test product', 'quantity' => 1, 'price' => 1.00, 'group_id' => '', 'variant' => array() ),
-				),
-				'content_type' => 'product',
-				'plan_id'      => '',
-				'custom_name'  => '',
-				'user'         => array(),
-				'channel'      => 'server',
-				'context'      => array( 'source_url' => home_url( '/' ), 'action_source' => 'web' ),
-			)
-		);
-
-		$result = $provider->capi()->send( array( $event ), true );
-
-		if ( is_wp_error( $result ) ) {
-			set_transient( 'openpixel_admin_notice', array( 'type' => 'error', 'text' => $result->get_error_message() ), 60 );
-		} else {
-			set_transient(
-				'openpixel_admin_notice',
+		if ( $provider instanceof OpenPixel_Provider_OpenAI ) {
+			$event = $provider->to_capi_event(
 				array(
-					'type' => 'success',
-					'text' => __( 'Conversions API accepted the test event (validate_only). Credentials and payload are valid.', 'open-pixel' ),
-				),
-				60
+					'name'         => 'purchase',
+					'event_id'     => 'openpixel_test_' . time(),
+					'value'        => 1.00,
+					'currency'     => 'USD',
+					'items'        => array(
+						array( 'id' => 'test', 'name' => 'Test product', 'quantity' => 1, 'price' => 1.00, 'group_id' => '', 'variant' => array() ),
+					),
+					'content_type' => 'product',
+					'plan_id'      => '',
+					'custom_name'  => '',
+					'user'         => array(),
+					'channel'      => 'server',
+					'context'      => array( 'source_url' => home_url( '/' ), 'action_source' => 'web' ),
+				)
 			);
+
+			$result = $provider->capi()->send( array( $event ), true );
+
+			if ( is_wp_error( $result ) ) {
+				$this->notice( 'error', $result->get_error_message() );
+			} else {
+				$this->notice( 'success', __( 'Conversions API accepted the test event (validate_only). Credentials and payload are valid.', 'open-pixel' ) );
+			}
 		}
 
-		wp_safe_redirect( $redirect );
+		wp_safe_redirect( $this->page_url() );
+		exit;
+	}
+
+	public function handle_feed_rebuild() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Not allowed.', 'open-pixel' ) );
+		}
+		check_admin_referer( 'openpixel_feed_rebuild' );
+
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			$this->notice( 'error', __( 'WooCommerce is not active.', 'open-pixel' ) );
+		} else {
+			$status = $this->core->get_feed()->build_inline();
+			if ( 'ready' === $status['state'] ) {
+				$this->notice(
+					'success',
+					sprintf(
+						/* translators: 1: row count, 2: skipped count */
+						__( 'Feed rebuilt: %1$d rows written, %2$d products skipped (missing brand, price or image).', 'open-pixel' ),
+						$status['rows'],
+						$status['skipped']
+					)
+				);
+			} else {
+				$this->notice( 'error', $status['message'] ? $status['message'] : __( 'Feed build failed.', 'open-pixel' ) );
+			}
+		}
+
+		wp_safe_redirect( $this->page_url( 'feed' ) );
+		exit;
+	}
+
+	public function handle_feed_rotate() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Not allowed.', 'open-pixel' ) );
+		}
+		check_admin_referer( 'openpixel_feed_rotate' );
+
+		OpenPixel_Product_Feed::delete_files();
+		OpenPixel_Product_Feed::rotate_token();
+		$this->notice( 'success', __( 'Feed URL rotated. The old URL no longer works; rebuild the feed and give OpenAI the new URL.', 'open-pixel' ) );
+
+		wp_safe_redirect( $this->page_url( 'feed' ) );
 		exit;
 	}
 
@@ -138,6 +191,11 @@ class OpenPixel_Admin {
 	public function render_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
+		}
+
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'pixels'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! in_array( $tab, array( 'pixels', 'feed' ), true ) ) {
+			$tab = 'pixels';
 		}
 
 		$notice = get_transient( 'openpixel_admin_notice' );
@@ -153,18 +211,24 @@ class OpenPixel_Admin {
 		<div class="wrap openpixel-wrap">
 			<h1><?php esc_html_e( 'Pixel Manager', 'open-pixel' ); ?></h1>
 
-			<form method="post" action="options.php">
-				<?php settings_fields( 'openpixel_settings_group' ); ?>
+			<nav class="nav-tab-wrapper">
+				<a href="<?php echo esc_url( $this->page_url() ); ?>" class="nav-tab <?php echo 'pixels' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Pixels', 'open-pixel' ); ?></a>
+				<a href="<?php echo esc_url( $this->page_url( 'feed' ) ); ?>" class="nav-tab <?php echo 'feed' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Product feed', 'open-pixel' ); ?></a>
+			</nav>
 
-				<?php foreach ( $this->core->get_providers() as $provider ) : ?>
-					<?php $this->render_provider( $provider ); ?>
-				<?php endforeach; ?>
-
-				<?php submit_button(); ?>
-			</form>
-
-			<?php $this->render_capi_test(); ?>
-			<?php $this->render_status(); ?>
+			<?php if ( 'feed' === $tab ) : ?>
+				<?php $this->render_feed_tab(); ?>
+			<?php else : ?>
+				<form method="post" action="options.php">
+					<?php settings_fields( 'openpixel_settings_group' ); ?>
+					<?php foreach ( $this->core->get_providers() as $provider ) : ?>
+						<?php $this->render_provider( $provider ); ?>
+					<?php endforeach; ?>
+					<?php submit_button(); ?>
+				</form>
+				<?php $this->render_capi_test(); ?>
+				<?php $this->render_status(); ?>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -177,12 +241,23 @@ class OpenPixel_Admin {
 		<?php if ( $provider->get_description() ) : ?>
 			<p class="description"><?php echo esc_html( $provider->get_description() ); ?></p>
 		<?php endif; ?>
-
+		<?php $this->render_fields( OPENPIXEL_OPTION_KEY . '[' . $id . ']', 'openpixel-' . $id, $provider->get_fields(), $settings ); ?>
 		<?php
+	}
+
+	/**
+	 * Render declarative fields grouped by optional "section".
+	 *
+	 * @param string $name_prefix e.g. "openpixel_settings[openai]"
+	 * @param string $id_prefix   e.g. "openpixel-openai"
+	 * @param array  $fields      key => field definition
+	 * @param array  $values      key => current value
+	 */
+	private function render_fields( $name_prefix, $id_prefix, array $fields, array $values ) {
 		$current_section = null;
 		$open            = false;
 
-		foreach ( $provider->get_fields() as $key => $field ) {
+		foreach ( $fields as $key => $field ) {
 			if ( ! empty( $field['section'] ) && $field['section'] !== $current_section ) {
 				if ( $open ) {
 					echo '</table>';
@@ -197,7 +272,7 @@ class OpenPixel_Admin {
 				$open = true;
 			}
 
-			$this->render_field( $id, $key, $field, isset( $settings[ $key ] ) ? $settings[ $key ] : '' );
+			$this->render_field( $name_prefix . '[' . $key . ']', $id_prefix . '-' . $key, $field, isset( $values[ $key ] ) ? $values[ $key ] : '' );
 		}
 
 		if ( $open ) {
@@ -205,12 +280,10 @@ class OpenPixel_Admin {
 		}
 	}
 
-	private function render_field( $provider_id, $key, array $field, $value ) {
-		$name    = OPENPIXEL_OPTION_KEY . '[' . $provider_id . '][' . $key . ']';
-		$dom_id  = 'openpixel-' . $provider_id . '-' . $key;
-		$type    = isset( $field['type'] ) ? $field['type'] : 'text';
-		$label   = isset( $field['label'] ) ? $field['label'] : $key;
-		$desc    = isset( $field['description'] ) ? $field['description'] : '';
+	private function render_field( $name, $dom_id, array $field, $value ) {
+		$type  = isset( $field['type'] ) ? $field['type'] : 'text';
+		$label = isset( $field['label'] ) ? $field['label'] : $name;
+		$desc  = isset( $field['description'] ) ? $field['description'] : '';
 		?>
 		<tr>
 			<th scope="row">
@@ -306,6 +379,95 @@ class OpenPixel_Admin {
 			<li><?php echo $wc_active ? '✅' : '➖'; ?> <?php esc_html_e( 'WooCommerce', 'open-pixel' ); ?>: <?php echo $wc_active ? esc_html__( 'active — product, cart, checkout and order events are tracked.', 'open-pixel' ) : esc_html__( 'not active — only page_viewed and registration events are tracked.', 'open-pixel' ); ?></li>
 			<li><?php echo $as_active ? '✅' : '➖'; ?> <?php esc_html_e( 'Action Scheduler', 'open-pixel' ); ?>: <?php echo $as_active ? esc_html__( 'available — server-side events are queued with retries.', 'open-pixel' ) : esc_html__( 'not available — WP-Cron is used instead.', 'open-pixel' ); ?></li>
 			<li>ℹ️ <?php esc_html_e( 'If your site enforces a Content Security Policy, allow script-src https://bzrcdn.openai.com, connect-src https://bzr.openai.com https://bzrcdn.openai.com and img-src https://bzr.openai.com.', 'open-pixel' ); ?></li>
+		</ul>
+		<?php
+	}
+
+	/* ---------------------------------------------------------------------
+	 * Product feed tab
+	 * ------------------------------------------------------------------ */
+
+	private function render_feed_tab() {
+		$settings = OpenPixel_Product_Feed::get_settings();
+		$status   = OpenPixel_Product_Feed::get_status();
+		$wc       = class_exists( 'WooCommerce' );
+		?>
+		<p><?php esc_html_e( 'Builds a product catalog file from WooCommerce in the OpenAI product feed format so ChatGPT Ads can run product-feed campaigns. Give OpenAI the private URL below, or download the file and upload it to the SFTP location shown in Ads Manager > Feeds.', 'open-pixel' ); ?></p>
+
+		<?php if ( ! $wc ) : ?>
+			<div class="notice notice-warning inline"><p><?php esc_html_e( 'WooCommerce is not active; the product feed needs WooCommerce products.', 'open-pixel' ); ?></p></div>
+		<?php endif; ?>
+
+		<form method="post" action="options.php">
+			<?php settings_fields( 'openpixel_feed_group' ); ?>
+			<?php $this->render_fields( OpenPixel_Product_Feed::OPTION_SETTINGS, 'openpixel-feed', OpenPixel_Product_Feed::get_fields(), $settings ); ?>
+			<?php submit_button(); ?>
+		</form>
+
+		<h2 class="title"><?php esc_html_e( 'Feed', 'open-pixel' ); ?></h2>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Private feed URL', 'open-pixel' ); ?></th>
+				<td>
+					<input type="text" class="large-text code" readonly value="<?php echo esc_attr( OpenPixel_Product_Feed::get_feed_url() ); ?>" onclick="this.select();" />
+					<p class="description"><?php esc_html_e( 'Anyone with this URL can read your catalog. Rotate it if it leaks.', 'open-pixel' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Status', 'open-pixel' ); ?></th>
+				<td>
+					<?php
+					switch ( $status['state'] ) {
+						case 'ready':
+							/* translators: 1: rows, 2: skipped, 3: date, 4: format, 5: profile */
+							$ready_text = esc_html__( 'Ready — %1$d rows, %2$d skipped, built %3$s (%4$s, %5$s schema).', 'open-pixel' );
+							printf(
+								$ready_text, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
+								(int) $status['rows'],
+								(int) $status['skipped'],
+								esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $status['finished'] ) ),
+								esc_html( strtoupper( $status['format'] ) ),
+								esc_html( $status['profile'] )
+							);
+							break;
+						case 'building':
+							/* translators: %d: number of rows written so far */
+							$building_text = esc_html__( 'Building in the background — %d rows so far.', 'open-pixel' );
+							printf( $building_text, (int) $status['rows'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
+							break;
+						case 'error':
+							echo esc_html__( 'Error: ', 'open-pixel' ) . esc_html( $status['message'] );
+							break;
+						default:
+							esc_html_e( 'Not built yet.', 'open-pixel' );
+					}
+					?>
+				</td>
+			</tr>
+		</table>
+
+		<p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-right:8px">
+				<input type="hidden" name="action" value="openpixel_feed_rebuild" />
+				<?php wp_nonce_field( 'openpixel_feed_rebuild' ); ?>
+				<?php submit_button( __( 'Rebuild now', 'open-pixel' ), 'primary', 'submit', false, $wc ? array() : array( 'disabled' => 'disabled' ) ); ?>
+			</form>
+			<?php if ( 'ready' === $status['state'] ) : ?>
+				<a class="button" href="<?php echo esc_url( OpenPixel_Product_Feed::get_feed_url( true ) ); ?>"><?php esc_html_e( 'Download', 'open-pixel' ); ?></a>
+			<?php endif; ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-left:8px" onsubmit="return confirm('<?php echo esc_js( __( 'Rotate the feed URL? The current URL stops working immediately.', 'open-pixel' ) ); ?>');">
+				<input type="hidden" name="action" value="openpixel_feed_rotate" />
+				<?php wp_nonce_field( 'openpixel_feed_rotate' ); ?>
+				<?php submit_button( __( 'Rotate URL', 'open-pixel' ), 'delete', 'submit', false ); ?>
+			</form>
+		</p>
+
+		<h3><?php esc_html_e( 'What goes in the feed', 'open-pixel' ); ?></h3>
+		<ul class="openpixel-status">
+			<li><?php esc_html_e( 'Published simple products and every published variation of variable products (variations share group_id and carry variant_dict).', 'open-pixel' ); ?></li>
+			<li><?php esc_html_e( 'Required fields: item_id, title, description, url, brand, seller_name, image_url, availability, price. Products missing brand, price or image are skipped and counted.', 'open-pixel' ); ?></li>
+			<li><?php esc_html_e( 'Prices use your tax display settings, formatted as "79.99 USD". Sale prices are included when active.', 'open-pixel' ); ?></li>
+			<li><?php esc_html_e( 'Product IDs match the ids sent in pixel events, so product-set filters and product insights line up.', 'open-pixel' ); ?></li>
 		</ul>
 		<?php
 	}

@@ -4,7 +4,7 @@ Tags: openai, chatgpt ads, pixel, conversion tracking, woocommerce
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -40,6 +40,16 @@ Orders are delivered asynchronously with retries and logged under
 WooCommerce > Status > Logs (source: open-pixel). A "Send test event"
 button validates your credentials without recording anything.
 
+= Product feed for ChatGPT Ads =
+
+The Product feed tab builds a catalog file from your WooCommerce products in
+the OpenAI product feed format (or the Google-compatible profile) as CSV, TSV
+or JSONL: one row per simple product or variation, with group_id and
+variant_dict for variants, prices as "79.99 USD", availability, images,
+brand, category, GTIN/MPN and is_ads_eligible. The file is rebuilt on a
+schedule and served at a private tokenized URL you can hand to OpenAI, or
+downloaded for upload to the SFTP location shown in Ads Manager > Feeds.
+
 = Extensible =
 
 The plugin is a small pixel manager: integrations emit normalized events on
@@ -69,6 +79,12 @@ and `img-src https://bzr.openai.com`. Use the `openpixel_script_nonce` filter to
 Yes. The plugin only uses the WooCommerce CRUD order API and declares HPOS compatibility.
 
 == Changelog ==
+
+= 1.2.0 =
+* Product feed: WooCommerce catalog export in the OpenAI product feed format or Google-compatible profile (CSV/TSV/JSONL), variants with group_id/variant_dict, scheduled rebuilds, private tokenized URL, download and URL rotation.
+* Fix: Conversions API deliveries failed with "no callbacks are registered" when run from Action Scheduler.
+* page_viewed on the order-received page now reports "order-received" instead of the Checkout page.
+* No duplicate contents_viewed after a classic add-to-cart reload.
 
 = 1.1.0 =
 * Native Measurement Pixel loader, page_viewed, consent mode, debug mode, noscript image tag.

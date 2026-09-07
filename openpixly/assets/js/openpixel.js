@@ -1,5 +1,5 @@
 /**
- * Open Pixel — front-end runtime.
+ * Openpixly — front-end runtime.
  *
  * PHP emits provider payloads as { provider: "openai", args: [...], event_id }.
  * Each provider registers a handler; the OpenAI handler simply forwards
@@ -77,7 +77,7 @@
 				remember(payload.event_id);
 			} catch (e) {
 				if (window.console && console.error) {
-					console.error('[open-pixel]', e);
+					console.error('[openpixly]', e);
 				}
 			}
 		});

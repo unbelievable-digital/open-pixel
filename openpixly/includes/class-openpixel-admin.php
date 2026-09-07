@@ -34,8 +34,8 @@ class OpenPixel_Admin {
 
 	public function add_menu() {
 		add_options_page(
-			__( 'Pixel Manager', 'open-pixel' ),
-			__( 'Pixel Manager', 'open-pixel' ),
+			__( 'Pixel Manager', 'openpixly' ),
+			__( 'Pixel Manager', 'openpixly' ),
 			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
@@ -43,7 +43,7 @@ class OpenPixel_Admin {
 	}
 
 	public function plugin_action_links( $links ) {
-		array_unshift( $links, '<a href="' . esc_url( $this->page_url() ) . '">' . esc_html__( 'Settings', 'open-pixel' ) . '</a>' );
+		array_unshift( $links, '<a href="' . esc_url( $this->page_url() ) . '">' . esc_html__( 'Settings', 'openpixly' ) . '</a>' );
 		return $links;
 	}
 
@@ -103,7 +103,7 @@ class OpenPixel_Admin {
 
 	public function handle_capi_test() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Not allowed.', 'open-pixel' ) );
+			wp_die( esc_html__( 'Not allowed.', 'openpixly' ) );
 		}
 		check_admin_referer( 'openpixel_capi_test' );
 
@@ -133,7 +133,7 @@ class OpenPixel_Admin {
 			if ( is_wp_error( $result ) ) {
 				$this->notice( 'error', $result->get_error_message() );
 			} else {
-				$this->notice( 'success', __( 'Conversions API accepted the test event (validate_only). Credentials and payload are valid.', 'open-pixel' ) );
+				$this->notice( 'success', __( 'Conversions API accepted the test event (validate_only). Credentials and payload are valid.', 'openpixly' ) );
 			}
 		}
 
@@ -143,12 +143,12 @@ class OpenPixel_Admin {
 
 	public function handle_feed_rebuild() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Not allowed.', 'open-pixel' ) );
+			wp_die( esc_html__( 'Not allowed.', 'openpixly' ) );
 		}
 		check_admin_referer( 'openpixel_feed_rebuild' );
 
 		if ( ! class_exists( 'WooCommerce' ) ) {
-			$this->notice( 'error', __( 'WooCommerce is not active.', 'open-pixel' ) );
+			$this->notice( 'error', __( 'WooCommerce is not active.', 'openpixly' ) );
 		} else {
 			$status = $this->core->get_feed()->build_inline();
 			if ( 'ready' === $status['state'] ) {
@@ -156,13 +156,13 @@ class OpenPixel_Admin {
 					'success',
 					sprintf(
 						/* translators: 1: row count, 2: skipped count */
-						__( 'Feed rebuilt: %1$d rows written, %2$d products skipped (missing brand, price or image).', 'open-pixel' ),
+						__( 'Feed rebuilt: %1$d rows written, %2$d products skipped (missing brand, price or image).', 'openpixly' ),
 						$status['rows'],
 						$status['skipped']
 					)
 				);
 			} else {
-				$this->notice( 'error', $status['message'] ? $status['message'] : __( 'Feed build failed.', 'open-pixel' ) );
+				$this->notice( 'error', $status['message'] ? $status['message'] : __( 'Feed build failed.', 'openpixly' ) );
 			}
 		}
 
@@ -172,13 +172,13 @@ class OpenPixel_Admin {
 
 	public function handle_feed_rotate() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Not allowed.', 'open-pixel' ) );
+			wp_die( esc_html__( 'Not allowed.', 'openpixly' ) );
 		}
 		check_admin_referer( 'openpixel_feed_rotate' );
 
 		OpenPixel_Product_Feed::delete_files();
 		OpenPixel_Product_Feed::rotate_token();
-		$this->notice( 'success', __( 'Feed URL rotated. The old URL no longer works; rebuild the feed and give OpenAI the new URL.', 'open-pixel' ) );
+		$this->notice( 'success', __( 'Feed URL rotated. The old URL no longer works; rebuild the feed and give OpenAI the new URL.', 'openpixly' ) );
 
 		wp_safe_redirect( $this->page_url( 'feed' ) );
 		exit;
@@ -209,11 +209,11 @@ class OpenPixel_Admin {
 		}
 		?>
 		<div class="wrap openpixel-wrap">
-			<h1><?php esc_html_e( 'Pixel Manager', 'open-pixel' ); ?></h1>
+			<h1><?php esc_html_e( 'Pixel Manager', 'openpixly' ); ?></h1>
 
 			<nav class="nav-tab-wrapper">
-				<a href="<?php echo esc_url( $this->page_url() ); ?>" class="nav-tab <?php echo 'pixels' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Pixels', 'open-pixel' ); ?></a>
-				<a href="<?php echo esc_url( $this->page_url( 'feed' ) ); ?>" class="nav-tab <?php echo 'feed' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Product feed', 'open-pixel' ); ?></a>
+				<a href="<?php echo esc_url( $this->page_url() ); ?>" class="nav-tab <?php echo 'pixels' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Pixels', 'openpixly' ); ?></a>
+				<a href="<?php echo esc_url( $this->page_url( 'feed' ) ); ?>" class="nav-tab <?php echo 'feed' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Product feed', 'openpixly' ); ?></a>
 			</nav>
 
 			<?php if ( 'feed' === $tab ) : ?>
@@ -302,7 +302,7 @@ class OpenPixel_Admin {
 							esc_attr( $dom_id ),
 							esc_attr( $name ),
 							checked( ! empty( $value ), true, false ),
-							esc_html__( 'Yes', 'open-pixel' )
+							esc_html__( 'Yes', 'openpixly' )
 						);
 						break;
 
@@ -360,12 +360,12 @@ class OpenPixel_Admin {
 			return;
 		}
 		?>
-		<h2 class="title"><?php esc_html_e( 'Test the Conversions API', 'open-pixel' ); ?></h2>
-		<p><?php esc_html_e( 'Sends one order_created event with validate_only = true. Nothing is recorded; OpenAI only checks the key and payload.', 'open-pixel' ); ?></p>
+		<h2 class="title"><?php esc_html_e( 'Test the Conversions API', 'openpixly' ); ?></h2>
+		<p><?php esc_html_e( 'Sends one order_created event with validate_only = true. Nothing is recorded; OpenAI only checks the key and payload.', 'openpixly' ); ?></p>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="openpixel_capi_test" />
 			<?php wp_nonce_field( 'openpixel_capi_test' ); ?>
-			<?php submit_button( __( 'Send test event', 'open-pixel' ), 'secondary', 'submit', false ); ?>
+			<?php submit_button( __( 'Send test event', 'openpixly' ), 'secondary', 'submit', false ); ?>
 		</form>
 		<?php
 	}
@@ -374,11 +374,11 @@ class OpenPixel_Admin {
 		$wc_active = class_exists( 'WooCommerce' );
 		$as_active = function_exists( 'as_schedule_single_action' );
 		?>
-		<h2 class="title"><?php esc_html_e( 'Status', 'open-pixel' ); ?></h2>
+		<h2 class="title"><?php esc_html_e( 'Status', 'openpixly' ); ?></h2>
 		<ul class="openpixel-status">
-			<li><?php echo $wc_active ? '✅' : '➖'; ?> <?php esc_html_e( 'WooCommerce', 'open-pixel' ); ?>: <?php echo $wc_active ? esc_html__( 'active — product, cart, checkout and order events are tracked.', 'open-pixel' ) : esc_html__( 'not active — only page_viewed and registration events are tracked.', 'open-pixel' ); ?></li>
-			<li><?php echo $as_active ? '✅' : '➖'; ?> <?php esc_html_e( 'Action Scheduler', 'open-pixel' ); ?>: <?php echo $as_active ? esc_html__( 'available — server-side events are queued with retries.', 'open-pixel' ) : esc_html__( 'not available — WP-Cron is used instead.', 'open-pixel' ); ?></li>
-			<li>ℹ️ <?php esc_html_e( 'If your site enforces a Content Security Policy, allow script-src https://bzrcdn.openai.com, connect-src https://bzr.openai.com https://bzrcdn.openai.com and img-src https://bzr.openai.com.', 'open-pixel' ); ?></li>
+			<li><?php echo $wc_active ? '✅' : '➖'; ?> <?php esc_html_e( 'WooCommerce', 'openpixly' ); ?>: <?php echo $wc_active ? esc_html__( 'active — product, cart, checkout and order events are tracked.', 'openpixly' ) : esc_html__( 'not active — only page_viewed and registration events are tracked.', 'openpixly' ); ?></li>
+			<li><?php echo $as_active ? '✅' : '➖'; ?> <?php esc_html_e( 'Action Scheduler', 'openpixly' ); ?>: <?php echo $as_active ? esc_html__( 'available — server-side events are queued with retries.', 'openpixly' ) : esc_html__( 'not available — WP-Cron is used instead.', 'openpixly' ); ?></li>
+			<li>ℹ️ <?php esc_html_e( 'If your site enforces a Content Security Policy, allow script-src https://bzrcdn.openai.com, connect-src https://bzr.openai.com https://bzrcdn.openai.com and img-src https://bzr.openai.com.', 'openpixly' ); ?></li>
 		</ul>
 		<?php
 	}
@@ -392,10 +392,10 @@ class OpenPixel_Admin {
 		$status   = OpenPixel_Product_Feed::get_status();
 		$wc       = class_exists( 'WooCommerce' );
 		?>
-		<p><?php esc_html_e( 'Builds a product catalog file from WooCommerce in the OpenAI product feed format so ChatGPT Ads can run product-feed campaigns. Give OpenAI the private URL below, or download the file and upload it to the SFTP location shown in Ads Manager > Feeds.', 'open-pixel' ); ?></p>
+		<p><?php esc_html_e( 'Builds a product catalog file from WooCommerce in the OpenAI product feed format so ChatGPT Ads can run product-feed campaigns. Give OpenAI the private URL below, or download the file and upload it to the SFTP location shown in Ads Manager > Feeds.', 'openpixly' ); ?></p>
 
 		<?php if ( ! $wc ) : ?>
-			<div class="notice notice-warning inline"><p><?php esc_html_e( 'WooCommerce is not active; the product feed needs WooCommerce products.', 'open-pixel' ); ?></p></div>
+			<div class="notice notice-warning inline"><p><?php esc_html_e( 'WooCommerce is not active; the product feed needs WooCommerce products.', 'openpixly' ); ?></p></div>
 		<?php endif; ?>
 
 		<form method="post" action="options.php">
@@ -404,23 +404,23 @@ class OpenPixel_Admin {
 			<?php submit_button(); ?>
 		</form>
 
-		<h2 class="title"><?php esc_html_e( 'Feed', 'open-pixel' ); ?></h2>
+		<h2 class="title"><?php esc_html_e( 'Feed', 'openpixly' ); ?></h2>
 		<table class="form-table" role="presentation">
 			<tr>
-				<th scope="row"><?php esc_html_e( 'Private feed URL', 'open-pixel' ); ?></th>
+				<th scope="row"><?php esc_html_e( 'Private feed URL', 'openpixly' ); ?></th>
 				<td>
 					<input type="text" class="large-text code" readonly value="<?php echo esc_attr( OpenPixel_Product_Feed::get_feed_url() ); ?>" onclick="this.select();" />
-					<p class="description"><?php esc_html_e( 'Anyone with this URL can read your catalog. Rotate it if it leaks.', 'open-pixel' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Anyone with this URL can read your catalog. Rotate it if it leaks.', 'openpixly' ); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><?php esc_html_e( 'Status', 'open-pixel' ); ?></th>
+				<th scope="row"><?php esc_html_e( 'Status', 'openpixly' ); ?></th>
 				<td>
 					<?php
 					switch ( $status['state'] ) {
 						case 'ready':
 							/* translators: 1: rows, 2: skipped, 3: date, 4: format, 5: profile */
-							$ready_text = esc_html__( 'Ready — %1$d rows, %2$d skipped, built %3$s (%4$s, %5$s schema).', 'open-pixel' );
+							$ready_text = esc_html__( 'Ready — %1$d rows, %2$d skipped, built %3$s (%4$s, %5$s schema).', 'openpixly' );
 							printf(
 								$ready_text, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
 								(int) $status['rows'],
@@ -432,14 +432,14 @@ class OpenPixel_Admin {
 							break;
 						case 'building':
 							/* translators: %d: number of rows written so far */
-							$building_text = esc_html__( 'Building in the background — %d rows so far.', 'open-pixel' );
+							$building_text = esc_html__( 'Building in the background — %d rows so far.', 'openpixly' );
 							printf( $building_text, (int) $status['rows'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
 							break;
 						case 'error':
-							echo esc_html__( 'Error: ', 'open-pixel' ) . esc_html( $status['message'] );
+							echo esc_html__( 'Error: ', 'openpixly' ) . esc_html( $status['message'] );
 							break;
 						default:
-							esc_html_e( 'Not built yet.', 'open-pixel' );
+							esc_html_e( 'Not built yet.', 'openpixly' );
 					}
 					?>
 				</td>
@@ -450,24 +450,24 @@ class OpenPixel_Admin {
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-right:8px">
 				<input type="hidden" name="action" value="openpixel_feed_rebuild" />
 				<?php wp_nonce_field( 'openpixel_feed_rebuild' ); ?>
-				<?php submit_button( __( 'Rebuild now', 'open-pixel' ), 'primary', 'submit', false, $wc ? array() : array( 'disabled' => 'disabled' ) ); ?>
+				<?php submit_button( __( 'Rebuild now', 'openpixly' ), 'primary', 'submit', false, $wc ? array() : array( 'disabled' => 'disabled' ) ); ?>
 			</form>
 			<?php if ( 'ready' === $status['state'] ) : ?>
-				<a class="button" href="<?php echo esc_url( OpenPixel_Product_Feed::get_feed_url( true ) ); ?>"><?php esc_html_e( 'Download', 'open-pixel' ); ?></a>
+				<a class="button" href="<?php echo esc_url( OpenPixel_Product_Feed::get_feed_url( true ) ); ?>"><?php esc_html_e( 'Download', 'openpixly' ); ?></a>
 			<?php endif; ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-left:8px" onsubmit="return confirm('<?php echo esc_js( __( 'Rotate the feed URL? The current URL stops working immediately.', 'open-pixel' ) ); ?>');">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-left:8px" onsubmit="return confirm('<?php echo esc_js( __( 'Rotate the feed URL? The current URL stops working immediately.', 'openpixly' ) ); ?>');">
 				<input type="hidden" name="action" value="openpixel_feed_rotate" />
 				<?php wp_nonce_field( 'openpixel_feed_rotate' ); ?>
-				<?php submit_button( __( 'Rotate URL', 'open-pixel' ), 'delete', 'submit', false ); ?>
+				<?php submit_button( __( 'Rotate URL', 'openpixly' ), 'delete', 'submit', false ); ?>
 			</form>
 		</p>
 
-		<h3><?php esc_html_e( 'What goes in the feed', 'open-pixel' ); ?></h3>
+		<h3><?php esc_html_e( 'What goes in the feed', 'openpixly' ); ?></h3>
 		<ul class="openpixel-status">
-			<li><?php esc_html_e( 'Published simple products and every published variation of variable products (variations share group_id and carry variant_dict).', 'open-pixel' ); ?></li>
-			<li><?php esc_html_e( 'Required fields: item_id, title, description, url, brand, seller_name, image_url, availability, price. Products missing brand, price or image are skipped and counted.', 'open-pixel' ); ?></li>
-			<li><?php esc_html_e( 'Prices use your tax display settings, formatted as "79.99 USD". Sale prices are included when active.', 'open-pixel' ); ?></li>
-			<li><?php esc_html_e( 'Product IDs match the ids sent in pixel events, so product-set filters and product insights line up.', 'open-pixel' ); ?></li>
+			<li><?php esc_html_e( 'Published simple products and every published variation of variable products (variations share group_id and carry variant_dict).', 'openpixly' ); ?></li>
+			<li><?php esc_html_e( 'Required fields: item_id, title, description, url, brand, seller_name, image_url, availability, price. Products missing brand, price or image are skipped and counted.', 'openpixly' ); ?></li>
+			<li><?php esc_html_e( 'Prices use your tax display settings, formatted as "79.99 USD". Sale prices are included when active.', 'openpixly' ); ?></li>
+			<li><?php esc_html_e( 'Product IDs match the ids sent in pixel events, so product-set filters and product insights line up.', 'openpixly' ); ?></li>
 		</ul>
 		<?php
 	}

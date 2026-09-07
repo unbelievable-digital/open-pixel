@@ -1,6 +1,6 @@
-# Open Pixel — project guide for Claude
+# Openpixly — project guide for Claude
 
-WordPress plugin: conversion pixel manager + product feed for ChatGPT Ads. Lives in `open-pixel/` (that folder is what ships). Repo: https://github.com/unbelievable-digital/open-pixel. WordPress.org slug `open-pixel` (submitted for review 2026-09-05, awaiting review).
+WordPress plugin: conversion pixel manager + product feed for ChatGPT Ads. Lives in `openpixly/` (that folder is what ships). Repo: https://github.com/unbelievable-digital/openpixly. WordPress.org slug `openpixly` (submitted for review 2026-09-05, awaiting review).
 
 ## Sources of truth (never guess, read these)
 
@@ -20,13 +20,14 @@ WordPress plugin: conversion pixel manager + product feed for ChatGPT Ads. Lives
 - **Deduplication:** deterministic `event_id`s — `order_{id}`, `checkout_{cart_hash}`, `reg_{user_id}`, `cart_{key}_{ts}`. Browser and CAPI reuse the same id. Fire purchase once per order (order meta `_openpixel_pixel_fired`, `_openpixel_capi_queued`).
 - **Server-side channel:** `channel => 'server'` events go to `openpixel_server_event` → `OpenPixel_OpenAI_CAPI::queue_event` → Action Scheduler action `openpixel_openai_capi_send` (4 attempts, 5xx/408/429 retry only). The CAPI object must be instantiated eagerly (provider constructor) or cron has no callback.
 - **Events raised without a page** (AJAX add-to-cart, registration redirect) are persisted in the WooCommerce session / user transient and flushed in the next footer or through `woocommerce_add_to_cart_fragments` (`#openpixel-pending`). JS dedups replays via `sessionStorage` `openpixel_seen`.
-- **Product feed:** `OpenPixel_Product_Feed` builds in 200-product batches into `uploads/open-pixel/feed-<hash>.<ext>`, status in option `openpixel_feed_status`, served at `?openpixel_feed=<token>` (`hash_equals`, noindex, no-cache). Item ids must equal the ids used in pixel `contents[]`.
-- **Prefix everything** `openpixel_` / `OpenPixel_` / `OPENPIXEL_`. Text domain `open-pixel`. No `oaip` anywhere.
-- **Names:** plugin is "Open Pixel" (brand-neutral). OpenAI only as the provider label "OpenAI (ChatGPT Ads Measurement Pixel)". Never put a trademark first in name/slug (wp.org guideline 17).
+- **Product feed:** `OpenPixel_Product_Feed` builds in 200-product batches into `uploads/openpixly/feed-<hash>.<ext>`, status in option `openpixel_feed_status`, served at `?openpixel_feed=<token>` (`hash_equals`, noindex, no-cache). Item ids must equal the ids used in pixel `contents[]`.
+- **Prefix everything** `openpixel_` / `OpenPixel_` / `OPENPIXEL_` (kept from the earlier "Open Pixel" name; unique enough, do not churn). Text domain, slug, folder, main file, log source, uploads dir and Action Scheduler group are all `openpixly`. No `oaip` anywhere.
+- **Names:** plugin is "Openpixly – Conversion Tracking & Product Feed for OpenAI Ads" (coined word first, trademark last after "for"). wp.org review rejected "Open Pixel" (existing agency name, generic-first). OpenAI only as the provider label "OpenAI (ChatGPT Ads Measurement Pixel)"; readme states no affiliation.
+- **wp.org review requirements already met, keep them:** `== External services ==` section in readme.txt listing every OpenAI endpoint, the data sent and when, OpenAI terms + privacy links, and the consent story (opt-in for site owner, admins excluded, "Require consent first" mode). Any new external call must be added there. Contributors line must include `zgrkaralar`.
 
 ## Conventions
 
-- WordPress coding standards, tabs, `esc_*` on output, `sanitize_*` on input, nonces on admin-post actions, `manage_options` capability. Plugin Check must pass with no errors (`npx pressship verify ./open-pixel`).
+- WordPress coding standards, tabs, `esc_*` on output, `sanitize_*` on input, nonces on admin-post actions, `manage_options` capability. Plugin Check must pass with no errors (`npx pressship verify ./openpixly`).
 - Keep `readme.txt` (wp.org) and `README.md` (GitHub) in sync; short description ≤ 150 chars; bump `Version` header, `OPENPIXEL_VERSION` and `Stable tag` together; add a changelog entry.
 - `docs/PLAN.md` tracks phases; update checkboxes when shipping.
 - Commit style: Conventional Commits (`feat:`, `fix:`, `docs:`, `design:`), body explains the doc fact behind the change.
@@ -34,14 +35,14 @@ WordPress plugin: conversion pixel manager + product feed for ChatGPT Ads. Lives
 
 ## Testing
 
-- Local store: `npx pressship demo ./open-pixel --port 8881 --skip-browser` (WordPress Playground, SQLite). Site files under `~/.wordpress-playground/sites/<hash>/`; a `dynamic-host.php` mu-plugin makes it reachable over LAN/Tailscale. Admin `admin`/`password`, auto-login `?pressship_auto_login=1`.
+- Local store: `npx pressship demo ./openpixly --port 8881 --skip-browser` (WordPress Playground, SQLite). Site files under `~/.wordpress-playground/sites/<hash>/`; a `dynamic-host.php` mu-plugin makes it reachable over LAN/Tailscale. Admin `admin`/`password`, auto-login `?pressship_auto_login=1`.
 - WooCommerce is installed by unzipping into that site's `wp-content/plugins/` and activating through wp-admin; products/settings created through the WC REST API with the cookie + `X-WP-Nonce`.
 - End-to-end script: `scratchpad/e2e.mjs` (Playwright): wraps `window.oaiq` to log every call, records `bzr.openai.com` responses, walks home → product → add to cart → cart → checkout → COD order → thank-you reload. Expect 202s, `order_created` once, `page_viewed` id `order-received` on reload.
-- Conversions API: admin "Send test event" = `validate_only`. Real delivery is visible in WooCommerce > Status > Logs, source `open-pixel`. Trigger Action Scheduler with `curl wp-cron.php?doing_wp_cron=…`; if an action shows stale `claim_id`, reset it in `wp_actionscheduler_actions`.
+- Conversions API: admin "Send test event" = `validate_only`. Real delivery is visible in WooCommerce > Status > Logs, source `openpixly`. Trigger Action Scheduler with `curl wp-cron.php?doing_wp_cron=…`; if an action shows stale `claim_id`, reset it in `wp_actionscheduler_actions`.
 - Feed: enable in the Product feed tab, "Rebuild now", then fetch the private URL; check header row, `price` format, `group_id`/`variant_dict` on variations, skipped count.
 
 ## Publishing
 
-- `npx pressship verify ./open-pixel` → `pack` → `publish --submit --dry-run -y`. Real submit needs `pressship login`; the CLI's overview prompt needs a TTY, so call `submit()` from `pressship/dist/wordpress-org/submit.js` with `{ yes: true, overview }` from a script instead of `expect` (spinner floods a pty).
-- After approval: `npx pressship publish ./open-pixel --release`, then upload `.wordpress-org/` assets to SVN `assets/`.
+- `npx pressship verify ./openpixly` → `pack` → `publish --submit --dry-run -y`. Real submit needs `pressship login`; the CLI's overview prompt needs a TTY, so call `submit()` from `pressship/dist/wordpress-org/submit.js` with `{ yes: true, overview }` from a script instead of `expect` (spinner floods a pty).
+- After approval: `npx pressship publish ./openpixly --release`, then upload `.wordpress-org/` assets to SVN `assets/`.
 - Never commit API keys or Pixel IDs; the test store's values live only in its SQLite DB.

@@ -9,7 +9,7 @@
  * - OpenAI format (item_id, url, image_url, seller_name, is_ads_eligible, ...)
  *   or the Google-compatible profile (id, link, image_link, item_group_id, ...).
  * - CSV / TSV / JSONL, built in batches (inline for "Regenerate now", via
- *   Action Scheduler on a schedule) into wp-content/uploads/open-pixel/.
+ *   Action Scheduler on a schedule) into wp-content/uploads/openpixly/.
  * - Served at ?openpixel_feed=<secret token>, noindex, no-cache.
  */
 
@@ -56,23 +56,23 @@ class OpenPixel_Product_Feed {
 	public static function get_fields() {
 		return array(
 			'enabled'          => array(
-				'label'       => __( 'Enable product feed', 'open-pixel' ),
+				'label'       => __( 'Enable product feed', 'openpixly' ),
 				'type'        => 'checkbox',
 				'default'     => false,
-				'description' => __( 'Generates a catalog file from your WooCommerce products and exposes it at a private URL you can give OpenAI.', 'open-pixel' ),
+				'description' => __( 'Generates a catalog file from your WooCommerce products and exposes it at a private URL you can give OpenAI.', 'openpixly' ),
 			),
 			'profile'          => array(
-				'label'       => __( 'Schema', 'open-pixel' ),
+				'label'       => __( 'Schema', 'openpixly' ),
 				'type'        => 'select',
 				'default'     => 'openai',
 				'options'     => array(
-					'openai' => __( 'OpenAI format (item_id, url, image_url, is_ads_eligible, ...)', 'open-pixel' ),
-					'google' => __( 'Google-compatible (id, link, image_link, item_group_id, ...)', 'open-pixel' ),
+					'openai' => __( 'OpenAI format (item_id, url, image_url, is_ads_eligible, ...)', 'openpixly' ),
+					'google' => __( 'Google-compatible (id, link, image_link, item_group_id, ...)', 'openpixly' ),
 				),
-				'description' => __( 'Use the schema OpenAI confirmed for your feed. OpenAI format is the default for new feeds.', 'open-pixel' ),
+				'description' => __( 'Use the schema OpenAI confirmed for your feed. OpenAI format is the default for new feeds.', 'openpixly' ),
 			),
 			'format'           => array(
-				'label'   => __( 'File format', 'open-pixel' ),
+				'label'   => __( 'File format', 'openpixly' ),
 				'type'    => 'select',
 				'default' => 'csv',
 				'options' => array(
@@ -82,37 +82,37 @@ class OpenPixel_Product_Feed {
 				),
 			),
 			'seller_name'      => array(
-				'label'       => __( 'Seller name', 'open-pixel' ),
+				'label'       => __( 'Seller name', 'openpixly' ),
 				'type'        => 'text',
 				'default'     => '',
-				'description' => __( 'Required by the OpenAI format on every row. Defaults to the site title.', 'open-pixel' ),
+				'description' => __( 'Required by the OpenAI format on every row. Defaults to the site title.', 'openpixly' ),
 			),
 			'brand_fallback'   => array(
-				'label'       => __( 'Default brand', 'open-pixel' ),
+				'label'       => __( 'Default brand', 'openpixly' ),
 				'type'        => 'text',
 				'default'     => '',
-				'description' => __( 'Used when a product has no brand (WooCommerce Brands taxonomy). Brand is a required field; rows without one are skipped.', 'open-pixel' ),
+				'description' => __( 'Used when a product has no brand (WooCommerce Brands taxonomy). Brand is a required field; rows without one are skipped.', 'openpixly' ),
 			),
 			'include_out_of_stock' => array(
-				'label'   => __( 'Include out-of-stock products', 'open-pixel' ),
+				'label'   => __( 'Include out-of-stock products', 'openpixly' ),
 				'type'    => 'checkbox',
 				'default' => true,
 			),
 			'ads_eligible'     => array(
-				'label'       => __( 'Mark products as Ads-eligible', 'open-pixel' ),
+				'label'       => __( 'Mark products as Ads-eligible', 'openpixly' ),
 				'type'        => 'checkbox',
 				'default'     => true,
-				'description' => __( 'Sets is_ads_eligible = true on every row (OpenAI format). Filter per product with the openpixel_feed_row filter.', 'open-pixel' ),
+				'description' => __( 'Sets is_ads_eligible = true on every row (OpenAI format). Filter per product with the openpixel_feed_row filter.', 'openpixly' ),
 			),
 			'schedule'         => array(
-				'label'   => __( 'Rebuild schedule', 'open-pixel' ),
+				'label'   => __( 'Rebuild schedule', 'openpixly' ),
 				'type'    => 'select',
 				'default' => 'daily',
 				'options' => array(
-					'hourly'     => __( 'Hourly', 'open-pixel' ),
-					'twicedaily' => __( 'Twice daily', 'open-pixel' ),
-					'daily'      => __( 'Daily', 'open-pixel' ),
-					'manual'     => __( 'Manual only', 'open-pixel' ),
+					'hourly'     => __( 'Hourly', 'openpixly' ),
+					'twicedaily' => __( 'Twice daily', 'openpixly' ),
+					'daily'      => __( 'Daily', 'openpixly' ),
+					'manual'     => __( 'Manual only', 'openpixly' ),
 				),
 			),
 		);
@@ -212,7 +212,7 @@ class OpenPixel_Product_Feed {
 
 	private static function get_dir() {
 		$uploads = wp_upload_dir();
-		$dir     = trailingslashit( $uploads['basedir'] ) . 'open-pixel';
+		$dir     = trailingslashit( $uploads['basedir'] ) . 'openpixly';
 		if ( ! is_dir( $dir ) ) {
 			wp_mkdir_p( $dir );
 			// Feed contains the catalog only, but keep the directory unlisted and
@@ -294,9 +294,9 @@ class OpenPixel_Product_Feed {
 			return;
 		}
 
-		as_unschedule_all_actions( self::ACTION_SCHEDULE, array(), 'open-pixel' );
+		as_unschedule_all_actions( self::ACTION_SCHEDULE, array(), 'openpixly' );
 		if ( $wanted ) {
-			as_schedule_recurring_action( time() + 60, $intervals[ $wanted ], self::ACTION_SCHEDULE, array(), 'open-pixel' );
+			as_schedule_recurring_action( time() + 60, $intervals[ $wanted ], self::ACTION_SCHEDULE, array(), 'openpixly' );
 		}
 		update_option( 'openpixel_feed_schedule_current', $wanted, false );
 	}
@@ -310,7 +310,7 @@ class OpenPixel_Product_Feed {
 		}
 		$this->begin();
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::ACTION_BUILD, array( 1, self::get_status()['tmp_file'] ), 'open-pixel' );
+			as_enqueue_async_action( self::ACTION_BUILD, array( 1, self::get_status()['tmp_file'] ), 'openpixly' );
 		} else {
 			$this->build_inline();
 		}
@@ -419,7 +419,7 @@ class OpenPixel_Product_Feed {
 			}
 
 			if ( $chain && function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action( self::ACTION_BUILD, array( $page + 1, $tmp_file ), 'open-pixel' );
+				as_enqueue_async_action( self::ACTION_BUILD, array( $page + 1, $tmp_file ), 'openpixly' );
 			}
 			return false;
 		} catch ( Exception $e ) {

@@ -1,4 +1,4 @@
-# Open Pixel — Implementation Plan
+# Openpixly — Implementation Plan
 
 Source of truth: https://developers.openai.com/ads/measurement-pixel (+ `supported-events`, `conversions-api`, `image-tag`, `multiple-pixels`). Everything below maps directly to those docs.
 
@@ -57,7 +57,7 @@ Events that happen on requests that render no page (AJAX add-to-cart, registrati
 - [x] API key setting (stored via WP options; never printed to the page).
 - [x] Capture `__oppref` / `__obref` cookies during checkout → order meta.
 - [x] `order_created` sent on `woocommerce_payment_complete` / first `processing|completed` status, same `order_{id}` id, `action_source=web`, `source_url` = order-received URL, `user` = hashed billing + IP + UA + `obref`, `contents[]` with `group_id` / `variant_dict`.
-- [x] Async delivery through Action Scheduler (ships with WooCommerce) with retry; WC logger output under source `open-pixel`.
+- [x] Async delivery through Action Scheduler (ships with WooCommerce) with retry; WC logger output under source `openpixly`.
 - [x] Admin "Send test event" using `validate_only: true`.
 - [ ] `registration_completed` and `lead_created` server-side where a browser event may be lost.
 - [ ] Verify on a real store with a real Pixel ID + API key (debug mode + WooCommerce logs).

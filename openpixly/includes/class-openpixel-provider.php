@@ -46,7 +46,7 @@ abstract class OpenPixel_Provider {
 	public function get_fields() {
 		return array(
 			'enabled' => array(
-				'label'   => __( 'Enabled', 'open-pixel' ),
+				'label'   => __( 'Enabled', 'openpixly' ),
 				'type'    => 'checkbox',
 				'default' => false,
 			),

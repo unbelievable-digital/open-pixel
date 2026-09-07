@@ -52,79 +52,79 @@ class OpenPixel_Provider_OpenAI extends OpenPixel_Provider {
 	}
 
 	public function get_label() {
-		return __( 'OpenAI (ChatGPT Ads Measurement Pixel)', 'open-pixel' );
+		return __( 'OpenAI (ChatGPT Ads Measurement Pixel)', 'openpixly' );
 	}
 
 	public function get_description() {
-		return __( 'Create a Pixel ID (and, for server-side events, a Conversions API key) in the Conversions tab of ChatGPT Ads Manager.', 'open-pixel' );
+		return __( 'Create a Pixel ID (and, for server-side events, a Conversions API key) in the Conversions tab of ChatGPT Ads Manager.', 'openpixly' );
 	}
 
 	public function get_fields() {
 		return array(
 			'enabled'           => array(
-				'label'   => __( 'Enable OpenAI pixel', 'open-pixel' ),
+				'label'   => __( 'Enable OpenAI pixel', 'openpixly' ),
 				'type'    => 'checkbox',
 				'default' => false,
 			),
 			'pixel_id'          => array(
-				'label'       => __( 'Pixel ID', 'open-pixel' ),
+				'label'       => __( 'Pixel ID', 'openpixly' ),
 				'type'        => 'text',
 				'default'     => '',
-				'description' => __( 'From Ads Manager > Conversions. Separate multiple Pixel IDs with commas; every event is sent to all of them.', 'open-pixel' ),
+				'description' => __( 'From Ads Manager > Conversions. Separate multiple Pixel IDs with commas; every event is sent to all of them.', 'openpixly' ),
 			),
 			'debug'             => array(
-				'label'       => __( 'Debug mode', 'open-pixel' ),
+				'label'       => __( 'Debug mode', 'openpixly' ),
 				'type'        => 'checkbox',
 				'default'     => false,
-				'description' => __( 'Logs SDK activity to the browser console. Turn off in production.', 'open-pixel' ),
+				'description' => __( 'Logs SDK activity to the browser console. Turn off in production.', 'openpixly' ),
 			),
 			'exclude_admins'    => array(
-				'label'       => __( 'Do not track administrators', 'open-pixel' ),
+				'label'       => __( 'Do not track administrators', 'openpixly' ),
 				'type'        => 'checkbox',
 				'default'     => true,
-				'description' => __( 'Skip the pixel entirely for logged-in users who can manage options.', 'open-pixel' ),
+				'description' => __( 'Skip the pixel entirely for logged-in users who can manage options.', 'openpixly' ),
 			),
 			'consent_mode'      => array(
-				'label'       => __( 'Consent', 'open-pixel' ),
+				'label'       => __( 'Consent', 'openpixly' ),
 				'type'        => 'select',
 				'default'     => 'default',
 				'options'     => array(
-					'default' => __( 'Measure immediately (SDK default)', 'open-pixel' ),
-					'require' => __( 'Require consent first', 'open-pixel' ),
+					'default' => __( 'Measure immediately (SDK default)', 'openpixly' ),
+					'require' => __( 'Require consent first', 'openpixly' ),
 				),
-				'description' => __( 'With "Require consent", the pixel starts with consent = false. Grant it from your cookie banner by calling window.openPixel.grantConsent(), or via the WP Consent API ("marketing" category), which is detected automatically.', 'open-pixel' ),
+				'description' => __( 'With "Require consent", the pixel starts with consent = false. Grant it from your cookie banner by calling window.openPixel.grantConsent(), or via the WP Consent API ("marketing" category), which is detected automatically.', 'openpixly' ),
 			),
 			'advanced_matching' => array(
-				'label'       => __( 'Send hashed customer data', 'open-pixel' ),
+				'label'       => __( 'Send hashed customer data', 'openpixly' ),
 				'type'        => 'checkbox',
 				'default'     => true,
-				'description' => __( 'Improves conversion matching. Email, phone and names are normalized and SHA-256 hashed on the server before they reach the browser; country/city/region/postal code are sent as plain text, as the docs require.', 'open-pixel' ),
+				'description' => __( 'Improves conversion matching. Email, phone and names are normalized and SHA-256 hashed on the server before they reach the browser; country/city/region/postal code are sent as plain text, as the docs require.', 'openpixly' ),
 			),
 			'noscript'          => array(
-				'label'       => __( 'No-JavaScript fallback', 'open-pixel' ),
+				'label'       => __( 'No-JavaScript fallback', 'openpixly' ),
 				'type'        => 'checkbox',
 				'default'     => true,
-				'description' => __( 'Adds a <noscript> image tag that records page_viewed when JavaScript is unavailable.', 'open-pixel' ),
+				'description' => __( 'Adds a <noscript> image tag that records page_viewed when JavaScript is unavailable.', 'openpixly' ),
 			),
 			'woocommerce'       => array(
-				'section'     => __( 'WooCommerce', 'open-pixel' ),
-				'label'       => __( 'Track WooCommerce events', 'open-pixel' ),
+				'section'     => __( 'WooCommerce', 'openpixly' ),
+				'label'       => __( 'Track WooCommerce events', 'openpixly' ),
 				'type'        => 'checkbox',
 				'default'     => true,
-				'description' => __( 'contents_viewed (product pages), items_added (add to cart), checkout_started, order_created (thank-you page) and registration_completed.', 'open-pixel' ),
+				'description' => __( 'contents_viewed (product pages), items_added (add to cart), checkout_started, order_created (thank-you page) and registration_completed.', 'openpixly' ),
 			),
 			'capi_enabled'      => array(
-				'section'     => __( 'Conversions API (server-side)', 'open-pixel' ),
-				'label'       => __( 'Send orders through the Conversions API', 'open-pixel' ),
+				'section'     => __( 'Conversions API (server-side)', 'openpixly' ),
+				'label'       => __( 'Send orders through the Conversions API', 'openpixly' ),
 				'type'        => 'checkbox',
 				'default'     => false,
-				'description' => __( 'Sends order_created from the server when payment completes, using the same event ID as the browser event so OpenAI deduplicates them. More reliable than the browser pixel alone.', 'open-pixel' ),
+				'description' => __( 'Sends order_created from the server when payment completes, using the same event ID as the browser event so OpenAI deduplicates them. More reliable than the browser pixel alone.', 'openpixly' ),
 			),
 			'capi_api_key'      => array(
-				'label'       => __( 'Conversions API key', 'open-pixel' ),
+				'label'       => __( 'Conversions API key', 'openpixly' ),
 				'type'        => 'password',
 				'default'     => '',
-				'description' => __( 'Leave blank to keep the saved key.', 'open-pixel' ),
+				'description' => __( 'Leave blank to keep the saved key.', 'openpixly' ),
 			),
 		);
 	}
@@ -168,7 +168,7 @@ class OpenPixel_Provider_OpenAI extends OpenPixel_Provider {
 			$user = OpenPixel_Hash::pixel_user( $bus->get_user() );
 		}
 
-		echo "\n<!-- OpenAI Measurement Pixel (Open Pixel plugin) -->\n";
+		echo "\n<!-- OpenAI Measurement Pixel (Openpixly plugin) -->\n";
 		echo '<script' . $nonce_attr . ">\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo "(function (w, d, s, u) {\n"
 			. "  if (w.oaiq) return;\n"

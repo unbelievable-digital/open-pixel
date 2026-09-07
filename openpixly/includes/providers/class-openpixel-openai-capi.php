@@ -8,7 +8,7 @@
  *
  * Events are delivered asynchronously (Action Scheduler when WooCommerce
  * ships it, WP-Cron otherwise) with a few retries, and logged to the
- * WooCommerce logger under the "open-pixel" source when available.
+ * WooCommerce logger under the "openpixly" source when available.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -19,7 +19,7 @@ class OpenPixel_OpenAI_CAPI {
 
 	const ENDPOINT           = 'https://bzr.openai.com/v1/events';
 	const ACTION_HOOK        = 'openpixel_openai_capi_send';
-	const INTEGRATION_SOURCE = 'open-pixel-wordpress';
+	const INTEGRATION_SOURCE = 'openpixly-wordpress';
 	const MAX_ATTEMPTS       = 4;
 
 	/** @var OpenPixel_Provider_OpenAI */
@@ -57,7 +57,7 @@ class OpenPixel_OpenAI_CAPI {
 		$args = array( $capi_event, (int) $attempt );
 
 		if ( function_exists( 'as_schedule_single_action' ) ) {
-			as_schedule_single_action( time() + $delay, self::ACTION_HOOK, $args, 'open-pixel' );
+			as_schedule_single_action( time() + $delay, self::ACTION_HOOK, $args, 'openpixly' );
 			return;
 		}
 
@@ -105,7 +105,7 @@ class OpenPixel_OpenAI_CAPI {
 		$pixel_ids = $this->provider->get_pixel_ids();
 
 		if ( ! $api_key || ! $pixel_ids ) {
-			return new WP_Error( 'openpixel_capi_unconfigured', __( 'Conversions API key or Pixel ID missing.', 'open-pixel' ) );
+			return new WP_Error( 'openpixel_capi_unconfigured', __( 'Conversions API key or Pixel ID missing.', 'openpixly' ) );
 		}
 
 		$body = array(
@@ -168,11 +168,11 @@ class OpenPixel_OpenAI_CAPI {
 
 	public function log( $message, $level = 'info' ) {
 		if ( function_exists( 'wc_get_logger' ) ) {
-			wc_get_logger()->log( $level, $message, array( 'source' => 'open-pixel' ) );
+			wc_get_logger()->log( $level, $message, array( 'source' => 'openpixly' ) );
 			return;
 		}
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( '[open-pixel] ' . strtoupper( $level ) . ': ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( '[openpixly] ' . strtoupper( $level ) . ': ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
 	}
 }

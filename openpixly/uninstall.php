@@ -14,7 +14,7 @@ delete_option( 'openpixel_feed_schedule_current' );
 
 // Generated feed files.
 $openpixel_uploads = wp_upload_dir();
-$openpixel_dir     = trailingslashit( $openpixel_uploads['basedir'] ) . 'open-pixel';
+$openpixel_dir     = trailingslashit( $openpixel_uploads['basedir'] ) . 'openpixly';
 if ( is_dir( $openpixel_dir ) ) {
 	foreach ( glob( $openpixel_dir . '/*' ) as $openpixel_file ) {
 		if ( is_file( $openpixel_file ) ) {
@@ -30,6 +30,6 @@ if ( is_dir( $openpixel_dir ) ) {
 }
 
 if ( function_exists( 'as_unschedule_all_actions' ) ) {
-	as_unschedule_all_actions( 'openpixel_feed_scheduled_build', array(), 'open-pixel' );
-	as_unschedule_all_actions( 'openpixel_feed_build_batch', array(), 'open-pixel' );
+	as_unschedule_all_actions( 'openpixel_feed_scheduled_build', array(), 'openpixly' );
+	as_unschedule_all_actions( 'openpixel_feed_build_batch', array(), 'openpixly' );
 }

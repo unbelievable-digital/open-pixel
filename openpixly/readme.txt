@@ -4,7 +4,7 @@ Tags: openai, chatgpt ads, pixel, conversion tracking, woocommerce
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -95,6 +95,9 @@ and `img-src https://bzr.openai.com`. Use the `openpixel_script_nonce` filter to
 Yes. The plugin only uses the WooCommerce CRUD order API and declares HPOS compatibility.
 
 == Changelog ==
+
+= 1.2.1 =
+* Product feed URL is now a plain path (https://your-site/openpixly-feed/<token>/products.csv) so it can be pasted into Ads Manager "Connect your feed via URL", which rejects query-string URLs. The old ?openpixel_feed= URL keeps working.
 
 = 1.2.0 =
 * Renamed to Openpixly (slug openpixly). Not affiliated with OpenAI.

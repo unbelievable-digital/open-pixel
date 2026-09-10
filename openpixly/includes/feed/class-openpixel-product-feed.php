@@ -22,6 +22,7 @@ class OpenPixel_Product_Feed {
 	const OPTION_SETTINGS = 'openpixel_feed_settings';
 	const OPTION_STATUS   = 'openpixel_feed_status';
 	const QUERY_VAR       = 'openpixel_feed';
+	const PATH_BASE       = 'openpixly-feed';
 	const ACTION_BUILD    = 'openpixel_feed_build_batch';
 	const ACTION_SCHEDULE = 'openpixel_feed_scheduled_build';
 	const BATCH_SIZE      = 200;
@@ -201,13 +202,50 @@ class OpenPixel_Product_Feed {
 	 * URLs & files
 	 * ------------------------------------------------------------------ */
 
+	/**
+	 * Public feed URL.
+	 *
+	 * Path based (https://site/openpixly-feed/<token>/products.csv) because
+	 * OpenAI Ads Manager's "Connect your feed via URL" only accepts a plain
+	 * HTTPS file URL — unknown query parameters are rejected. The path is
+	 * matched straight from REQUEST_URI, so it works with any permalink
+	 * setting and needs no rewrite flush. The legacy ?openpixel_feed=<token>
+	 * form keeps working.
+	 */
 	public static function get_feed_url( $download = false ) {
 		$settings = self::get_settings();
-		$args     = array( self::QUERY_VAR => $settings['token'] );
-		if ( $download ) {
-			$args['download'] = 1;
+		$url      = home_url( self::PATH_BASE . '/' . $settings['token'] . '/products.' . OpenPixel_Feed_Writer::extension( $settings['format'] ) );
+		return $download ? add_query_arg( 'download', 1, $url ) : $url;
+	}
+
+	/**
+	 * Token from /openpixly-feed/<token>/products.<ext> or ?openpixel_feed=<token>.
+	 *
+	 * @return string Empty when the request is not a feed request.
+	 */
+	private static function requested_token() {
+		if ( ! empty( $_GET[ self::QUERY_VAR ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return sanitize_text_field( wp_unslash( $_GET[ self::QUERY_VAR ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
-		return add_query_arg( $args, home_url( '/' ) );
+
+		if ( empty( $_SERVER['REQUEST_URI'] ) ) {
+			return '';
+		}
+
+		$path = (string) wp_parse_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH );
+		$home = (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH );
+
+		// Strip the install sub-directory and a PATHINFO-style "index.php/".
+		if ( '' !== $home && '/' !== $home && 0 === strpos( $path, rtrim( $home, '/' ) ) ) {
+			$path = substr( $path, strlen( rtrim( $home, '/' ) ) );
+		}
+		$path = preg_replace( '#^/(index\.php/)?#', '', $path );
+
+		if ( preg_match( '#^' . preg_quote( self::PATH_BASE, '#' ) . '/([A-Za-z0-9]{16,64})/products\.(csv|tsv|jsonl|txt)$#', $path, $m ) ) {
+			return $m[1];
+		}
+
+		return '';
 	}
 
 	private static function get_dir() {
@@ -240,12 +278,12 @@ class OpenPixel_Product_Feed {
 	 * Serve the feed when ?openpixel_feed=<token> matches.
 	 */
 	public function maybe_serve() {
-		if ( empty( $_GET[ self::QUERY_VAR ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$token = self::requested_token();
+		if ( '' === $token ) {
 			return;
 		}
 
 		$settings = self::get_settings();
-		$token    = sanitize_text_field( wp_unslash( $_GET[ self::QUERY_VAR ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		nocache_headers();
 		header( 'X-Robots-Tag: noindex, nofollow' );

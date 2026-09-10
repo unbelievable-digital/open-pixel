@@ -44,7 +44,7 @@ For the Conversions API, also paste the API key from the same tab and use **Send
 - One row per simple product, one per published variation (same `group_id`, `variant_dict` from attributes). Prices as `79.99 USD` using your tax display settings; `sale_price` when a sale is active; availability `in_stock` / `out_of_stock` / `backorder`.
 - Required fields enforced: products without brand (WooCommerce Brands or the fallback setting), price or image are skipped and counted.
 - Item ids equal WooCommerce product/variation ids — the same ids the pixel sends in `contents[]`, so product-set filters and product insights line up.
-- Built in batches of 200 (inline for "Rebuild now", Action Scheduler for the hourly / twice-daily / daily schedule) into `wp-content/uploads/openpixly/`, then served at `https://your-site/?openpixel_feed=<token>` with `noindex` and no-cache headers. Add `&download=1` for an attachment. "Rotate URL" invalidates the token.
+- Built in batches of 200 (inline for "Rebuild now", Action Scheduler for the hourly / twice-daily / daily schedule) into `wp-content/uploads/openpixly/`, then served at `https://your-site/openpixly-feed/<token>/products.csv` (plain path, so it can be pasted into Ads Manager > Feeds > "Connect your feed via URL", which rejects query strings) with `noindex` and no-cache headers. Add `?download=1` for an attachment. "Rotate URL" invalidates the token.
 - Hooks: `openpixel_feed_row( $row, $product, $parent, $profile )` to adjust or drop rows, `openpixel_feed_columns( $columns, $profile )`, `openpixel_feed_built( $file, $status )`.
 
 OpenAI ingests Ads catalogs via the SFTP location shown in Ads Manager > Feeds; download the file and upload it there, or point any fetcher at the private URL.

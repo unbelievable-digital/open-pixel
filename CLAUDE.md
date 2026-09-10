@@ -1,6 +1,6 @@
 # Openpixly — project guide for Claude
 
-WordPress plugin: conversion pixel manager + product feed for ChatGPT Ads. Lives in `openpixly/` (that folder is what ships). Repo: https://github.com/unbelievable-digital/openpixly. WordPress.org slug `openpixly` (submitted for review 2026-09-05, awaiting review).
+WordPress plugin: conversion pixel manager + product feed for ChatGPT Ads. Lives in `openpixly/` (that folder is what ships). Repo: https://github.com/unbelievable-digital/openpixly. WordPress.org slug `openpixly`, approved and published 2026-09-10.
 
 ## Sources of truth (never guess, read these)
 
@@ -44,5 +44,8 @@ WordPress plugin: conversion pixel manager + product feed for ChatGPT Ads. Lives
 ## Publishing
 
 - `npx pressship verify ./openpixly` → `pack` → `publish --submit --dry-run -y`. Real submit needs `pressship login`; the CLI's overview prompt needs a TTY, so call `submit()` from `pressship/dist/wordpress-org/submit.js` with `{ yes: true, overview }` from a script instead of `expect` (spinner floods a pty).
-- After approval: `npx pressship publish ./openpixly --release`, then upload `.wordpress-org/` assets to SVN `assets/`.
+- Released: 1.2.0 live at https://wordpress.org/plugins/openpixly/ (SVN r3689603 code, r3689605 assets, 2026-09-10; git tag `v1.2.0`).
+- Next releases: bump version (header, `OPENPIXEL_VERSION`, `Stable tag`, changelog), then `npx pressship release ./openpixly --slug openpixly --username zgrkaralar -y`. Do NOT pass `--version`: the CLI treats it as its own version flag and just prints `0.1.0`; the version comes from the plugin header.
+- SVN password is saved in `~/.config/pressship/svn-credentials.json` (mode 600, never commit). Working copy is `.pressship-svn/openpixly` (gitignored).
+- Pressship does not upload `.wordpress-org/` images. When icons/banners change: copy them into `.pressship-svn/openpixly/assets/`, `svn add`, `svn propset svn:mime-type image/png assets/*.png`, `svn commit`.
 - Never commit API keys or Pixel IDs; the test store's values live only in its SQLite DB.
